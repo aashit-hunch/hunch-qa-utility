@@ -1,0 +1,28 @@
+query GetMbtiPolls {
+  getMbtiPolls {
+    items {
+      type
+      extraData {
+        ... on FeedItemPollExtraData {
+          progressBar {
+            total
+            current
+            label
+          }
+          type
+        }
+      }
+      sections {
+        ... on PollSectionGeneralPoll {
+          poll_section_type
+          id
+          question
+          options {
+            id
+            text
+          }
+        }
+      }
+    }
+  }
+}

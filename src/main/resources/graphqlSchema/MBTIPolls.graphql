@@ -1,0 +1,9 @@
+mutation Vote($input: VoteInput!) {
+  vote(input: $input) {
+    createdAt
+    createdBy
+    createdByUserUid
+    pollId
+    optionId
+  }
+}

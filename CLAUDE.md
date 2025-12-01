@@ -1,0 +1,3 @@
+- Read my pom.xml file to get the idea of all the dependencies I am using and whith which version
+- always provide the optimal solution. Only provide solution in Java language.
+- This project is built to generate the user data via DB queries and using API calls

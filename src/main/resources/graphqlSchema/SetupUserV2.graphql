@@ -1,0 +1,239 @@
+mutation SetAccountV2($user: AccountInputV2!,$referral: String) {
+      setAccountV2(user: $user, referral: $referral) {
+        nextRoute
+        userUid
+        username
+        name
+        bio
+        dob
+        tags {
+          icon
+          parent
+          tagName
+        }
+        boostDetails {
+          boostConfig {
+            duration {
+              single
+              double
+            }
+            offeringName
+            productIdQtyMapping {
+              hunch_boost_profile
+              hunch_boost_profile_v2
+              hunch_boost_profile_v3
+            }
+          }
+          boostTotal
+          boostEndTimestamp
+          boostStartTimestamp
+          isBoostActive
+        }
+        entitlements {
+          expireDate
+          gracePeriodExpiresDate
+          productIdentifier
+          productPlanIdentifier
+          presentedOfferingId
+          purchaseDate
+          presentedOfferingId
+          isCancelled
+          purchaseSource
+        }
+        dp
+        phoneNumber
+        email
+        dp
+        gender
+        collegename
+        interests
+        location
+        source
+        openId
+        becomeCreator
+        creatorAccessTs
+        eliteAccessTs
+        status
+        isPrivate
+        userUid
+        age
+        createdAt
+        livelinessStatus
+        updatedAt
+        pronouns
+        vibescore
+        generatedDP
+        twitterUserId
+        twitterScreenName
+        subscriptionId
+        manageBillingUrl
+        serverTime
+        activityCount {
+          comment_count
+          like_count
+          vote_count
+          poll_count
+          prompts_count
+          archived_poll_count
+          waves_sent_count
+          crush_sent_count
+          waves_dismissed_count
+          wave_received_count
+          wave_sent_count_after_ethnicity
+        }
+        city
+        country
+        region
+        firstName
+        phoneNumber
+        lastName
+        shareableUrl
+        referralLink
+        countryGroup
+        zodiacSignVisibility
+        zodiacSign
+        datingPreference
+        desiredRelationshipType
+        height {
+          feet
+          inches
+        }
+        isFtueOnboardingCompleted
+        isProfileSetupStatus
+        isPhotoUpgradeScreenRequired
+        multipleDps
+        wavesLeft
+        totalWavesSent
+        isSnoozedFromRecommendations
+        wavesResetAt
+        latitude
+        longitude
+        waveUnreadCount
+        shareableUrl
+        suspendedTill
+        nsfwSetting
+        isInterestFeedAdded
+        mbtiType
+        mbtiQuizStatus
+        creatorEarlyAccess {
+          userUid
+          appliedOn
+          status
+          waitingNo
+          pollLimit
+          isResetCreatorAccess
+          isCreatorAccess
+          isEliteCreatorAccess
+        }
+        availableExperiments {
+          name
+          value
+          variant
+        }
+        subGender
+        genderVisibility
+        ethnicity
+        ethnicityVisibility
+        profileAttributes {
+          exercise {
+            value
+            valueArray
+            type
+            visibility
+          }
+          educationLevel {
+            value
+            valueArray
+            type
+            visibility
+          }
+          workplace {
+            value
+            valueArray
+            type
+            visibility
+          }
+          occupation {
+            value
+            valueArray
+            type
+            visibility
+          }
+          drinkingHabits {
+            value
+            valueArray
+            type
+            visibility
+          }
+          smokingHabits {
+            value
+            valueArray
+            type
+            visibility
+          }
+          weedUsage {
+            value
+            valueArray
+            type
+            visibility
+          }
+          drugUsage {
+            value
+            valueArray
+            type
+            visibility
+          }
+          dietaryPreference {
+            value
+            valueArray
+            type
+            visibility
+          }
+          familyPlans {
+            value
+            valueArray
+            type
+            visibility
+          }
+          petPreference {
+            value
+            valueArray
+            type
+            visibility
+          }
+          politics {
+            value
+            valueArray
+            type
+            visibility
+          }
+          religion {
+            value
+            valueArray
+            type
+            visibility
+          }
+          homeTown {
+            value
+            valueArray
+            type
+            visibility
+          }
+          languages {
+            value
+            valueArray
+            type
+            visibility
+          }
+        }
+          profilePictureReviewCreditLimit {
+            id
+            userId
+            currentTotalCount
+            hunchPlusCount
+            directPurchaseCount
+            freeCreditCount
+            isAiMatchMakerBannerRead
+          }
+      }
+    }

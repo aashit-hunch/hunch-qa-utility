@@ -75,7 +75,7 @@ public class APIService {
         requestBody.setVariables(requestBodyObj);
         apiObj.setRequestBody(requestBody.toString());
         Response resp = apiObj.apiCall();
-        String jwtToken = FirebaseJWTManager.getInstance().transformTokenAToTokenB(resp.jsonPath().getString("data.verifyOtp"));
-        ThreadUtils.jwtToken.set(jwtToken);
+        //String jwtToken = FirebaseJWTManager.getInstance().transformTokenAToTokenB(resp.jsonPath().getString("data.verifyOtp"));
+        //ThreadUtils.jwtToken.set(jwtToken);
     }
 }

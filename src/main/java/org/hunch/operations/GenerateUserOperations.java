@@ -122,13 +122,18 @@ public class GenerateUserOperations {
     public static void main(String[] args) {
        try {
            GenerateUserOperations genUser = new GenerateUserOperations();
-           //DatabaseFunctions.generateRandomNewUser();
-           String num = genUser.generateRandomNumber();
-           APIService.sendOtp(num);
-           APIService.verifyOtp(num);
-           //APIService.setupV2WithRandomData();
-           //APIService.setRandomMbti();
+           DatabaseFunctions.generateRandomNewUser();
+           //String num = genUser.generateRandomNumber();
+           //APIService.sendOtp(num);
+           //APIService.verifyOtp(num);
+           APIService.setupV2WithRandomData();
+           APIService.setRandomMbti();
 
+
+
+       }
+       catch (Exception e){
+              LOGGER.info("Exception occurred : "+e.getMessage());
        }
        finally {
               dbConnection.closePool();

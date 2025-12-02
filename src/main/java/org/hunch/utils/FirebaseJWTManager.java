@@ -1,7 +1,5 @@
 package org.hunch.utils;
-
 import com.google.auth.oauth2.GoogleCredentials;
-import com.google.auth.oauth2.ServiceAccountCredentials;
 import com.google.firebase.FirebaseApp;
 import com.google.firebase.FirebaseOptions;
 import com.google.firebase.auth.FirebaseAuth;
@@ -9,34 +7,46 @@ import com.google.firebase.auth.FirebaseAuthException;
 import com.google.firebase.auth.FirebaseToken;
 import com.google.gson.Gson;
 import com.google.gson.JsonObject;
-import io.jsonwebtoken.Claims;
-import io.jsonwebtoken.Jwts;
-import io.jsonwebtoken.SignatureAlgorithm;
-import lombok.Getter;
 import org.apache.log4j.Logger;
 import org.hunch.models.FirebaseServiceAccount;
-import org.json.JSONObject;
 
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.net.URI;
+import java.net.http.HttpClient;
+import java.net.http.HttpRequest;
+import java.net.http.HttpResponse;
 import java.nio.charset.StandardCharsets;
-import java.security.PrivateKey;
-import java.util.*;
+import java.util.HashMap;
+import java.util.Map;
+
+/**
+ * Firebase Token Exchange Manager
+ * Uses official Google Identity Toolkit API for token exchange
+ *
+ * Flow:
+ * 1. Create Custom Token (Token A) using Firebase Admin SDK
+ * 2. Exchange with Google's API for ID Token (Token B) - signed by Google
+ * 3. Token B is ready for GraphQL server authentication
+ */
 public class FirebaseJWTManager {
 
     private static final Logger LOGGER = Logger.getLogger(FirebaseJWTManager.class);
+    private static final String IDENTITY_TOOLKIT_URL =
+            "https://identitytoolkit.googleapis.com/v1/accounts:signInWithCustomToken?key=";
+
     private static FirebaseJWTManager instance;
     private static FirebaseServiceAccount firebaseServiceAccount;
-    private ServiceAccountCredentials serviceAccountCredentials;
-    private String projectId;
-    private String privateKeyId;
+    private String firebaseWebApiKey;
 
     private FirebaseJWTManager() {
         // Private constructor for singleton
     }
 
-    // Initialize Firebase Admin SDK using JSON string
+    /**
+     * Initialize Firebase Admin SDK
+     */
     static {
         firebaseServiceAccount = new FirebaseServiceAccount().setFirebaseAccount();
         if (FirebaseApp.getApps().isEmpty()) {
@@ -44,47 +54,39 @@ public class FirebaseJWTManager {
                     firebaseServiceAccount.toString().getBytes(StandardCharsets.UTF_8)
             );
 
-            FirebaseOptions options = null;
             try {
-                options = FirebaseOptions.builder()
+                FirebaseOptions options = FirebaseOptions.builder()
                         .setCredentials(GoogleCredentials.fromStream(serviceAccount))
                         .build();
 
-                // Initialize service account credentials for manual JWT creation
-                InputStream serviceAccountCopy = new ByteArrayInputStream(
-                        firebaseServiceAccount.toString().getBytes(StandardCharsets.UTF_8)
-                );
-                getInstance().serviceAccountCredentials = ServiceAccountCredentials.fromStream(serviceAccountCopy);
+                FirebaseApp.initializeApp(options);
 
-                // Extract project_id and private_key_id from JSON
+                // Extract Web API Key from service account JSON
                 Gson gson = new Gson();
                 JsonObject jsonObject = gson.fromJson(firebaseServiceAccount.toString(), JsonObject.class);
-                getInstance().projectId = jsonObject.get("project_id").getAsString();
-                getInstance().privateKeyId = jsonObject.get("private_key_id").getAsString();
+
+                // Note: Web API Key should be set separately or extracted from Firebase config
+                getInstance().firebaseWebApiKey = jsonObject.get("apiKey").getAsString();;
+
+                if (getInstance().firebaseWebApiKey == null) {
+                    LOGGER.warn("FIREBASE_WEB_API_KEY not set. Token exchange will fail.");
+                }
 
             } catch (IOException e) {
                 throw new RuntimeException("Exception Occurred while initializing Firebase: " + e.getMessage());
             }
 
-            FirebaseApp.initializeApp(options);
+            LOGGER.info("Firebase Token Exchange Manager Initialized Successfully");
         }
-        LOGGER.info("Firebase Admin SDK Initialized Successfully");
     }
 
     /**
-     * Initialize Firebase Admin SDK using InputStream
-     *
-     * @param serviceAccountStream InputStream containing service account JSON
-     * @throws IOException if credentials are invalid
+     * Set Firebase Web API Key (required for token exchange)
+     * Get this from Firebase Console > Project Settings > General > Web API Key
      */
-    public static void initializeFromStream(InputStream serviceAccountStream) throws IOException {
-        if (FirebaseApp.getApps().isEmpty()) {
-            FirebaseOptions options = FirebaseOptions.builder()
-                    .setCredentials(GoogleCredentials.fromStream(serviceAccountStream))
-                    .build();
-
-            FirebaseApp.initializeApp(options);
-        }
+    public void setFirebaseWebApiKey(String apiKey) {
+        this.firebaseWebApiKey = apiKey;
+        LOGGER.info("Firebase Web API Key configured");
     }
 
     /**
@@ -98,314 +100,136 @@ public class FirebaseJWTManager {
     }
 
     /**
-     * Decode Token A (Firebase Custom Token) without verification
-     * Extracts claims from the JWT payload
+     * STEP 1: Generate Token A (Firebase Custom Token)
+     * Uses Firebase Admin SDK
      *
-     * @param tokenA The JWT token to decode
-     * @return Map containing all claims from the token
+     * @param userDetails User information
+     * @return Token A (Custom Token signed by service account)
+     * @throws FirebaseAuthException if token creation fails
      */
-    public Map<String, Object> decodeTokenA(String tokenA) {
-        try {
-            // Split JWT into parts
-            String[] parts = tokenA.split("\\.");
-            if (parts.length != 3) {
-                throw new IllegalArgumentException("Invalid JWT token format");
-            }
+    public String generateTokenA(UserDetails userDetails) throws FirebaseAuthException {
+        Map<String, Object> additionalClaims = new HashMap<>();
 
-            // Decode payload (second part)
-            String payload = new String(Base64.getUrlDecoder().decode(parts[1]), StandardCharsets.UTF_8);
-
-            // Parse JSON
-            Gson gson = new Gson();
-            @SuppressWarnings("unchecked")
-            Map<String, Object> claims = gson.fromJson(payload, Map.class);
-
-            LOGGER.info("Successfully decoded Token A. User ID: " + claims.get("uid"));
-            return claims;
-
-        } catch (Exception e) {
-            LOGGER.error("Error decoding Token A: " + e.getMessage(), e);
-            throw new RuntimeException("Failed to decode Token A", e);
+        if (userDetails.getEmail() != null && !userDetails.getEmail().isEmpty()) {
+            additionalClaims.put("email", userDetails.getEmail());
         }
+        if (userDetails.getPhoneNumber() != null && !userDetails.getPhoneNumber().isEmpty()) {
+            additionalClaims.put("phoneNumber", userDetails.getPhoneNumber());
+        }
+
+        if (userDetails.getCustomClaims() != null && !userDetails.getCustomClaims().isEmpty()) {
+            additionalClaims.putAll(userDetails.getCustomClaims());
+        }
+
+        String tokenA = FirebaseAuth.getInstance()
+                .createCustomToken(userDetails.getUserId(), additionalClaims);
+        LOGGER.info("TOKEN A Generated : "+ tokenA);
+        LOGGER.info("Token A (Custom Token) generated for user: " + userDetails.getUserId());
+        return tokenA;
     }
 
     /**
-     * Decode Token A using Firebase Admin SDK (with verification)
-     * This verifies the token signature and validates it
+     * STEP 2: Exchange Token A for Token B (Firebase ID Token)
+     * Uses Google's official Identity Toolkit API
      *
-     * @param tokenA The Firebase ID token to verify and decode
-     * @return FirebaseToken containing verified claims
-     * @throws FirebaseAuthException if token verification fails
+     * @param customToken Token A (Custom Token)
+     * @return Token B (ID Token signed by Google)
+     * @throws IOException if HTTP request fails
+     * @throws InterruptedException if request is interrupted
      */
-    public FirebaseToken decodeAndVerifyTokenA(String tokenA) throws FirebaseAuthException {
-        try {
-            FirebaseToken decodedToken = FirebaseAuth.getInstance().verifyIdToken(tokenA);
-            LOGGER.info("Successfully verified and decoded Token A. User ID: " + decodedToken.getUid());
-            return decodedToken;
-        } catch (FirebaseAuthException e) {
-            LOGGER.error("Token A verification failed: " + e.getMessage(), e);
-            throw e;
-        }
-    }
-
-    /**
-     * Transform Token A to Token B
-     * Decodes Token A, extracts claims, and creates a new Firebase ID Token (Token B)
-     *
-     * @param tokenA The source token to decode
-     * @return New Firebase ID Token (Token B) with proper structure
-     */
-    public String transformTokenAToTokenB(String tokenA) {
-        try {
-            // Decode Token A (without verification for flexibility)
-            Map<String, Object> tokenAClaims = decodeTokenA(tokenA);
-
-            // Extract user details from Token A
-            String userId = extractUserId(tokenAClaims);
-            String email = extractEmail(tokenAClaims);
-            String phoneNumber = extractPhoneNumber(tokenAClaims);
-            Long authTime = extractAuthTime(tokenAClaims);
-
-            // Build UserDetails for Token B
-            UserDetails.Builder builder = new UserDetails.Builder()
-                    .setUserId(userId)
-                    .setSignInProvider("custom");
-
-            if (email != null) {
-                builder.setEmail(email);
-            }
-            if (phoneNumber != null) {
-                builder.setPhoneNumber(phoneNumber);
-            }
-            if (authTime != null) {
-                builder.setAuthTime(authTime);
-            }
-
-            UserDetails userDetails = builder.build();
-
-            // Create Token B using the Firebase ID Token method
-            String tokenB = createFirebaseIdToken(userDetails);
-
-            LOGGER.info("Successfully transformed Token A to Token B for user: " + userId);
-            return tokenB;
-
-        } catch (Exception e) {
-            LOGGER.error("Error transforming Token A to Token B: " + e.getMessage(), e);
-            throw new RuntimeException("Failed to transform token", e);
-        }
-    }
-
-    /**
-     * Extract user ID from Token A claims
-     */
-    private String extractUserId(Map<String, Object> claims) {
-        // Try different possible fields for user ID
-        if (claims.containsKey("uid")) {
-            return claims.get("uid").toString();
-        } else if (claims.containsKey("user_id")) {
-            return claims.get("user_id").toString();
-        } else if (claims.containsKey("sub")) {
-            return claims.get("sub").toString();
-        }
-        throw new IllegalArgumentException("No user ID found in Token A");
-    }
-
-    /**
-     * Extract email from Token A claims
-     */
-    private String extractEmail(Map<String, Object> claims) {
-        if (claims.containsKey("email")) {
-            return claims.get("email").toString();
-        }
-        // Check nested claims object
-        if (claims.containsKey("claims")) {
-            @SuppressWarnings("unchecked")
-            Map<String, Object> nestedClaims = (Map<String, Object>) claims.get("claims");
-            if (nestedClaims != null && nestedClaims.containsKey("email")) {
-                return nestedClaims.get("email").toString();
-            }
-        }
-        return null;
-    }
-
-    /**
-     * Extract phone number from Token A claims
-     */
-    private String extractPhoneNumber(Map<String, Object> claims) {
-        if (claims.containsKey("phone_number")) {
-            return claims.get("phone_number").toString();
-        }
-        if (claims.containsKey("phoneNumber")) {
-            return claims.get("phoneNumber").toString();
-        }
-        // Check nested claims object
-        if (claims.containsKey("claims")) {
-            @SuppressWarnings("unchecked")
-            Map<String, Object> nestedClaims = (Map<String, Object>) claims.get("claims");
-            if (nestedClaims != null) {
-                if (nestedClaims.containsKey("phoneNumber")) {
-                    return nestedClaims.get("phoneNumber").toString();
-                }
-                if (nestedClaims.containsKey("phone_number")) {
-                    return nestedClaims.get("phone_number").toString();
-                }
-            }
-        }
-        return null;
-    }
-
-    /**
-     * Extract auth_time from Token A claims
-     */
-    private Long extractAuthTime(Map<String, Object> claims) {
-        if (claims.containsKey("auth_time")) {
-            Object authTime = claims.get("auth_time");
-            if (authTime instanceof Number) {
-                return ((Number) authTime).longValue();
-            }
-        }
-        // Default to current time if not found
-        return System.currentTimeMillis() / 1000;
-    }
-
-    /**
-     * Create a Firebase ID Token with claims at root level
-     * This creates a properly formatted Firebase ID token with RS256 signature
-     *
-     * @param userDetails User information to include in the token
-     * @return JWT token string with Firebase ID token structure
-     */
-    public String createFirebaseIdToken(UserDetails userDetails) {
-        if (serviceAccountCredentials == null) {
-            throw new IllegalStateException("Firebase not initialized properly. Service account credentials missing.");
+    public String exchangeForIdToken(String customToken) throws IOException, InterruptedException {
+        if (firebaseWebApiKey == null || firebaseWebApiKey.isEmpty()) {
+            throw new IllegalStateException(
+                    "Firebase Web API Key not configured. Call setFirebaseWebApiKey() first.");
         }
 
-        long nowSeconds = System.currentTimeMillis() / 1000;
-        long expirationSeconds = nowSeconds + 3600; // 1 hour expiration
+        String url = IDENTITY_TOOLKIT_URL + firebaseWebApiKey;
 
-        PrivateKey privateKey = serviceAccountCredentials.getPrivateKey();
+        // Build request body
+        JsonObject requestBody = new JsonObject();
+        requestBody.addProperty("token", customToken);
+        requestBody.addProperty("returnSecureToken", true);
 
-        // Build claims at root level
-        Map<String, Object> claims = new HashMap<>();
-
-        // Standard JWT claims
-        claims.put("iss", "https://securetoken.google.com/" + projectId);
-        claims.put("aud", projectId);
-        claims.put("auth_time", userDetails.getAuthTime() != null ? userDetails.getAuthTime() : nowSeconds);
-        claims.put("user_id", userDetails.getUserId());
-        claims.put("sub", userDetails.getUserId());
-        claims.put("iat", nowSeconds);
-        claims.put("exp", expirationSeconds);
-
-        // User profile claims at root level
-        if (userDetails.getEmail() != null) {
-            claims.put("email", userDetails.getEmail());
-        }
-        if (userDetails.getPhoneNumber() != null) {
-            claims.put("phoneNumber", userDetails.getPhoneNumber());
-        }
-
-        // Firebase-specific claims at root level
-        if (userDetails.getFirebaseIdentities() != null && !userDetails.getFirebaseIdentities().isEmpty()) {
-            Map<String, Object> firebaseData = new HashMap<>();
-            firebaseData.put("identities", userDetails.getFirebaseIdentities());
-
-            if (userDetails.getSignInProvider() != null) {
-                firebaseData.put("sign_in_provider", userDetails.getSignInProvider());
-            }
-
-            claims.put("firebase", firebaseData);
-        } else {
-            // Create default firebase claim with sign_in_provider
-            Map<String, Object> firebaseData = new HashMap<>();
-            firebaseData.put("identities", new HashMap<>());
-            if (userDetails.getSignInProvider() != null) {
-                firebaseData.put("sign_in_provider", userDetails.getSignInProvider());
-            }
-            claims.put("firebase", firebaseData);
-        }
-
-        // Add any additional custom claims at root level
-        if (userDetails.getAdditionalClaims() != null) {
-            claims.putAll(userDetails.getAdditionalClaims());
-        }
-
-        // Create JWT with proper headers (alg: RS256, kid: private_key_id, typ: JWT)
-        return Jwts.builder()
-                .setHeaderParam("kid", privateKeyId)
-                .setHeaderParam("typ", "JWT")
-                .setClaims(claims)
-                .signWith(privateKey, SignatureAlgorithm.RS256)
-                .compact();
-    }
-
-    /**
-     * Helper method to create UserDetails from JSONObject
-     */
-    public UserDetails getUserDetails(JSONObject userData) {
-        UserDetails userDetails = new UserDetails.Builder()
-                .setUserId(userData.getString("user_uid"))
-                .setEmail(userData.getString("email"))
-                .setAuthTime(System.currentTimeMillis() / 1000)
-                .setSignInProvider("custom")
-                .setPhoneNumber(userData.getString("phone_number"))
+        // Create HTTP client and request
+        HttpClient client = HttpClient.newHttpClient();
+        HttpRequest request = HttpRequest.newBuilder()
+                .uri(URI.create(url))
+                .header("Content-Type", "application/json")
+                .POST(HttpRequest.BodyPublishers.ofString(requestBody.toString(), StandardCharsets.UTF_8))
                 .build();
-        return userDetails;
-    }
 
-    /**
-     * Example main method demonstrating Token A to Token B transformation
-     */
-    public static void main(String[] args) {
-        try {
-            FirebaseJWTManager jwtManager = FirebaseJWTManager.getInstance();
+        // Send request
+        HttpResponse<String> response = client.send(request, HttpResponse.BodyHandlers.ofString());
 
-            // Token A (from your example)
-            String tokenA = "eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9.eyJhdWQiOiJodHRwczovL2lkZW50aXR5dG9vbGtpdC5nb29nbGVhcGlzLmNvbS9nb29nbGUuaWRlbnRpdHkuaWRlbnRpdHl0b29sa2l0LnYxLklkZW50aXR5VG9vbGtpdCIsImlhdCI6MTc2NDU4Nzk5NywiZXhwIjoxNzY0NTkxNTk3LCJpc3MiOiJmaXJlYmFzZS1hZG1pbnNkay0xZmtwbUBodW5jaC1wcm9kLWUxMTMwLmlhbS5nc2VydmljZWFjY291bnQuY29tIiwic3ViIjoiZmlyZWJhc2UtYWRtaW5zZGstMWZrcG1AaHVuY2gtcHJvZC1lMTEzMC5pYW0uZ3NlcnZpY2VhY2NvdW50LmNvbSIsInVpZCI6IjFkMzE1ZWYxLTI1NzEtNDMxNC05NDU2LWIwMDQ1MjcwZGUxOSIsImNsYWltcyI6eyJlbWFpbCI6IjFkMzE1ZWYxLTI1NzEtNDMxNC05NDU2LWIwMDQ1MjcwZGUxOUBodW5jaG1vYmlsZS5jb20iLCJwaG9uZU51bWJlciI6Iis5MTkzMTEzODQ5MTUifX0.k2CEVbVuHGMGFczKZD_RKEkTkeXfd935PKGQEpBhBJzwf1wVZ-_yhlANjDH24bszRePB-2UADeqS7VzfycPSWCPIzaQ8YT9dK7VRqRf0MUQgRxQ0Ql6EMfTXuOAiQ4iO6qIAH53FZd7Fw0tEsQFQVeTnnwTeSsXUq-qPHYdVqd8RtZNzqFLflurpzIE_Cy7j6Hi_aAROyLRJinznEjxFQKU7LCJae3Ib0hexU8-bK4Ju7rInYycnifzwkjXiKnwrOeCds-wgYMK7z3cXB8w8AFhKrDiQjI6MIbWEj6heHnKLRe6zAifP0g1txPbm9g7Lmu6kx_PkXOjdokNMUXuxzA";
-
-            System.out.println("=== Decoding Token A ===");
-            Map<String, Object> decodedClaims = jwtManager.decodeTokenA(tokenA);
-            System.out.println("Token A Claims: " + decodedClaims);
-            System.out.println();
-
-            System.out.println("=== Transforming Token A to Token B ===");
-            String tokenB = jwtManager.transformTokenAToTokenB(tokenA);
-            System.out.println("Token B (Firebase ID Token):");
-            System.out.println(tokenB);
-            System.out.println();
-
-            // Decode Token B to verify structure
-            System.out.println("=== Token B Structure ===");
-            String[] parts = tokenB.split("\\.");
-            String header = new String(Base64.getUrlDecoder().decode(parts[0]));
-            String payload = new String(Base64.getUrlDecoder().decode(parts[1]));
-
-            System.out.println("Header: " + header);
-            System.out.println("Payload: " + payload);
-
-        } catch (Exception e) {
-            System.err.println("Error: " + e.getMessage());
-            e.printStackTrace();
+        if (response.statusCode() != 200) {
+            LOGGER.error("Token exchange failed: " + response.body());
+            throw new RuntimeException("Failed to exchange token. Status: " +
+                    response.statusCode() + ", Body: " + response.body());
         }
+
+        // Parse response to extract ID token
+        Gson gson = new Gson();
+        JsonObject responseJson = gson.fromJson(response.body(), JsonObject.class);
+        String idToken = responseJson.get("idToken").getAsString();
+
+        LOGGER.info("Token B (ID Token) successfully obtained from Google");
+        return idToken;
     }
 
     /**
-     * Builder class for user details
+     * COMPLETE TOKEN EXCHANGE FLOW
+     * Single method to perform the entire token exchange
+     *
+     * @param userDetails User information
+     * @return TokenPair containing both Token A and Token B
+     * @throws FirebaseAuthException if token generation fails
+     * @throws IOException if token exchange fails
+     * @throws InterruptedException if request is interrupted
      */
-    @Getter
+    public TokenPair performTokenExchange(UserDetails userDetails)
+            throws FirebaseAuthException, IOException, InterruptedException {
+
+        LOGGER.info("Starting token exchange for user: " + userDetails.getUserId());
+
+        // Step 1: Generate Token A (Custom Token)
+        String tokenA = generateTokenA(userDetails);
+
+        // Step 2: Exchange for Token B (ID Token) via Google API
+        String tokenB = exchangeForIdToken(tokenA);
+
+        LOGGER.info("Token exchange completed successfully");
+        return new TokenPair(tokenA, tokenB);
+    }
+
+    /**
+     * Verify Token B (for testing/validation)
+     * @param idToken Firebase ID Token
+     * @return Decoded Firebase Token
+     * @throws FirebaseAuthException if verification fails
+     */
+    public FirebaseToken verifyIdToken(String idToken) throws FirebaseAuthException {
+        FirebaseToken decodedToken = FirebaseAuth.getInstance().verifyIdToken(idToken);
+        LOGGER.info("Token verified successfully for user: " + decodedToken.getUid());
+        return decodedToken;
+    }
+
+    /**
+     * User Details Class
+     */
     public static class UserDetails {
         private String userId;
         private String email;
-        private Long authTime;
-        private String signInProvider;
         private String phoneNumber;
-        private Map<String, Object> firebaseIdentities;
-        private Map<String, Object> additionalClaims;
+        private Map<String, Object> customClaims;
 
         private UserDetails() {
-            this.firebaseIdentities = new HashMap<>();
-            this.additionalClaims = new HashMap<>();
+            this.customClaims = new HashMap<>();
         }
+
+        public String getUserId() { return userId; }
+        public String getEmail() { return email; }
+        public String getPhoneNumber() { return phoneNumber; }
+        public Map<String, Object> getCustomClaims() { return customClaims; }
 
         public static class Builder {
             private UserDetails userDetails;
@@ -424,28 +248,13 @@ public class FirebaseJWTManager {
                 return this;
             }
 
-            public Builder setAuthTime(Long authTime) {
-                userDetails.authTime = authTime;
-                return this;
-            }
-
-            public Builder setSignInProvider(String signInProvider) {
-                userDetails.signInProvider = signInProvider;
-                return this;
-            }
-
-            public Builder addIdentity(String provider, List<String> identifiers) {
-                userDetails.firebaseIdentities.put(provider, identifiers);
+            public Builder setPhoneNumber(String phoneNumber) {
+                userDetails.phoneNumber = phoneNumber;
                 return this;
             }
 
             public Builder addCustomClaim(String key, Object value) {
-                userDetails.additionalClaims.put(key, value);
-                return this;
-            }
-
-            public Builder setPhoneNumber(String phoneNumber) {
-                userDetails.phoneNumber = phoneNumber;
+                userDetails.customClaims.put(key, value);
                 return this;
             }
 
@@ -455,6 +264,89 @@ public class FirebaseJWTManager {
                 }
                 return userDetails;
             }
+        }
+    }
+
+    /**
+     * Token Pair Class
+     */
+    public static class TokenPair {
+        private final String tokenA;
+        private final String tokenB;
+
+        public TokenPair(String tokenA, String tokenB) {
+            this.tokenA = tokenA;
+            this.tokenB = tokenB;
+        }
+
+        public String getTokenA() { return tokenA; }
+        public String getTokenB() { return tokenB; }
+
+        @Override
+        public String toString() {
+            return "TokenPair{\n" +
+                    "  tokenA (Custom Token) = " + tokenA + "\n" +
+                    "  tokenB (ID Token - Google Signed) = " + tokenB + "\n" +
+                    "}";
+        }
+    }
+
+    /**
+     * Example usage
+     */
+    public static void main(String[] args) {
+        try {
+            FirebaseJWTManager manager = FirebaseJWTManager.getInstance();
+
+            // IMPORTANT: Set your Firebase Web API Key
+            // Get this from: Firebase Console > Project Settings > General > Web API Key
+            manager.setFirebaseWebApiKey("AIzaSyXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX");
+
+            System.out.println("\n" + "=".repeat(70));
+            System.out.println("FIREBASE TOKEN EXCHANGE - Official Google API");
+            System.out.println("=".repeat(70));
+
+            // Build user details
+            UserDetails userDetails = new UserDetails.Builder()
+                    .setUserId("1d315ef1-2571-4314-9456-b00452700de19")
+                    .setEmail("1d315ef1-2571-4314-9456-b00452700de19@hunchmobile.com")
+                    .setPhoneNumber("+919311384915")
+                    .addCustomClaim("role", "user")
+                    .build();
+
+            System.out.println("\n📋 User Details:");
+            System.out.println("   User ID: " + userDetails.getUserId());
+            System.out.println("   Email: " + userDetails.getEmail());
+            System.out.println("   Phone: " + userDetails.getPhoneNumber());
+
+            // Perform token exchange
+            System.out.println("\n🔄 Performing Token Exchange...");
+            TokenPair tokens = manager.performTokenExchange(userDetails);
+
+            System.out.println("\n" + "=".repeat(70));
+            System.out.println("TOKEN A (Custom Token - Service Account Signed)");
+            System.out.println("=".repeat(70));
+            System.out.println(tokens.getTokenA());
+
+            System.out.println("\n" + "=".repeat(70));
+            System.out.println("TOKEN B (ID Token - Google Signed) ✅");
+            System.out.println("=".repeat(70));
+            System.out.println(tokens.getTokenB());
+
+            // Verify Token B
+            System.out.println("\n🔍 Verifying Token B with Firebase...");
+            FirebaseToken verifiedToken = manager.verifyIdToken(tokens.getTokenB());
+            System.out.println("✅ Token verified successfully!");
+            System.out.println("   User ID: " + verifiedToken.getUid());
+            System.out.println("   Email: " + verifiedToken.getEmail());
+
+            System.out.println("\n" + "=".repeat(70));
+            System.out.println("✅ Token B is ready for GraphQL authentication!");
+            System.out.println("=".repeat(70));
+
+        } catch (Exception e) {
+            LOGGER.error("Error during token exchange", e);
+            e.printStackTrace();
         }
     }
 }

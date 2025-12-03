@@ -1,7 +1,12 @@
 package org.hunch.utils;
 
 import org.apache.log4j.Logger;
+import org.json.JSONArray;
+import org.json.JSONObject;
 import tools.jackson.databind.ObjectMapper;
+
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.security.SecureRandom;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
@@ -48,4 +53,30 @@ public class Common {
         DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss.SSS");
         return LocalDateTime.now().format(formatter);
     }
+
+    public static JSONArray getUserData(){
+        try{
+            String json = Files.readString(Path.of(System.getProperty("user.dir")+"/src/main/resources/userData.json"));
+            JSONArray obj = new JSONArray(json);
+            List<Object> list = obj.toList();;
+            Collections.shuffle(list);
+            obj = new JSONArray(list);
+            return obj;
+        }
+        catch (Exception e){
+            throw  new RuntimeException("Exception occurred while reading user data json: "+e.getMessage());
+        }
+    }
+
+    public static JSONObject getLivenessData(){
+        try{
+            String json = Files.readString(Path.of(System.getProperty("user.dir")+"/src/main/resources/liveness.json"));
+            JSONObject obj = new JSONObject(json);
+            return obj;
+        }
+        catch (Exception e){
+            throw  new RuntimeException("Exception occurred while reading liveness data json: "+e.getMessage());
+        }
+    }
+
 }

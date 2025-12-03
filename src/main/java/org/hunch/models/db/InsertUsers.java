@@ -128,7 +128,7 @@ public class InsertUsers {
 
 
     public InsertUsers(String userId,String username,String phoneNumber,String email,String device,String appVersion,String refCode,String adId){
-        this.status="active";
+        this.status="pending";
         this.source="custom_phone_number";
         this.username=username;
         this.firstName= Faker.instance().name().firstName();

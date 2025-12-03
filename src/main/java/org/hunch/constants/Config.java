@@ -23,17 +23,12 @@ public class Config {
     public static final String FIREBASE_CLIENT_X509_CERT_URL = "wM40w9oFl1hD98GTwxY7jm66h0ysGlrEr79wKd/vLt6ML0VGX+SmX7Ij0MUACo0+xfwGvSDU4PTWcYnjarezkpy07QC0/Ok2KC9TKU0KJDTt4bMzWXI/rKY6vO2RZjjF8zuTrbh1ohUKW+u7SEo4esm2lDr4yJo4KUHQzyfF/Kq0rL0ALm6E8iRHu9XrPp46NLMgWpKJzlLAH3QLJEmdtBJslRitWREEYx9ci46oxAo=";
     public static final String FIREBASE_API_KEY = "qx9ohiZVS+VL+OKg3IrnHEVThUjixKyy2jTAg81OtryZm0koZSjSVSJY51EqBaH7NXmgHUdlHTe4vINsV47oTTGC7ulINDfEtsV9NBUErNN9xiQ9xW5Z16BeFdnuLiBu";
 
-    /*
-        "type": "service_account",
-    "project_id": "flutter-sl-poc-21aa3",
-    "private_key_id": "29454eef096e50097574399a132665d5276728f9",
-    "private_key": "-----BEGIN PRIVATE KEY-----\nMIIEvQIBADANBgkqhkiG9w0BAQEFAASCBKcwggSjAgEAAoIBAQDFy8YdcXwM4S3s\nlaQDh62+ue0EexLTcyZSesvZKsbzECG/U0lKiMj6SjgGIgmBQDpjPFunUcOiJABw\nhjAY021vYmKk6DimMJVcNNKhsl76OL1l0hir/THqeEJ+DhwXUJUCbqTxpVRSbqUk\n3xwFto+YE85OlIxE0ykBd3xeHrpRutBvL4aLgKFfSwCceRkE+g1yPknXhABRojza\n/7C9TeAaiX74rz7IYbxek0rQ/O/i1ArFnrGh9fJ1tE9cWVAEW788zupjLGIVl8Zr\nI2uC2u+X9VvgYNpCxvJ/pyPjygmztYXFKP4n8WmgFV1qNtVhJZrkVQLf+UT6VF2V\nNur7xV/TAgMBAAECggEAC+5u9nkeHwn5HIOp7G6WsmHol42AnrgcMGIcG6I2QXsQ\nVhUexci6uuJkPvZ2dVE1bgwGvIqbNWCPlQbhlHXLuaoJKK87aS1jRrftZsSdCkht\nU4/ykT/JbySu+iFwXCjhVc+GOQkC+gmWztxIhlqAKFyb5Gb9XFKsInY3NQqmEzNW\nMKHjc4USQXquEdUTihiT4kVx+bzxmxmiJJYp6EJfCq5zbn5eMyIc1Gwe65O0qqNe\nE66hUeX9TPhuhUHfcTSVSxF1Zw8ZQj/q+OX7FLp8PA02XXeCcMCkbIsZvxY/AQqY\na7MuPeBhlmByRFnfMbWTE70NKd2wJ38VtF5fwG4OpQKBgQDvtcW0O3P4wvra6yEn\n3aRuZ4X1JKffKolDeapXXtMuD/ta9Kt5WLjLyLxvgBrXr/StlEi6HTCkQ6kzG2HR\nIK3ocM4UWBtI+vDsPujVy42BBdCqs98tIl9LoK3YyQI85KYa3xuIog+fuMw5KVVe\nfnB80fx8d7WL1ENfKCks0aEMHQKBgQDTPNL8g38kdAaqWDx7FfWVOMDS5XPX8x2H\nucHfxnJL6uWAj+aWDDGhE1pFE1z/p0GeDJRv1weaTKL4Zim/EgrwWk7I6oHjktp5\nbRxnRBPpWjXj5GIHj5KbJQTQayzxbDXOscgLXV5/iKzKtX9RNjS4WHffj+/tePo7\nZz1vMBr4rwKBgQCvk8HbEM0SQabCoQTpEWR2Zadt9sprINnnrX8CffdKvvQKHDpZ\nKI463a6AMSH4J+6dEYbvo5/UQab2QzEzn68iGTYpGpvpqby8HhwnNPBRt/OuhQ+M\nHKgWWfvcVOcpuQSdnBuryaCOCiq0F71q+EvmcVxxwrEcWX57fYwjQuymVQKBgD0e\nMiWhnl3bvDn5QbaTSfUc8J2UigoHa5njozat4lAY7MJf4GW1rX5fbRTjX1sQ96lV\nFnWtj6OTXOvmE1oXTFbyqizzvRUtXk0XxsoSJni0Azem0r5BSjfdZCExgVVw67ic\nM7cmErtvvh8AmI/U0TgtULG8obzh7fTWEC5lisg9AoGAY73IkRW1fFx31VwsFNgB\n79RAIiK5dYA7ybz1w3GwQhpITEZcz4HrRGsasfqMgN0QPtiYf/HfBTF/nVcNLnUR\nZmJIazg62jIHTFbE6XSVV8V9OkqQ1nTCs//yqy14hPQ9tFJRyeg33d2SX6CCmfBq\n8ErilcmwU/7Uv8Qwd6hcYZs=\n-----END PRIVATE KEY-----\n",
-    "client_email": "firebase-adminsdk-dy3tx@flutter-sl-poc-21aa3.iam.gserviceaccount.com",
-    "client_id": "107323748643348021255",
-    "auth_uri": "https://accounts.google.com/o/oauth2/auth",
-    "token_uri": "https://oauth2.googleapis.com/token",
-    "auth_provider_x509_cert_url": "https://www.googleapis.com/oauth2/v1/certs",
-    "client_x509_cert_url": "https://www.googleapis.com/robot/v1/metadata/x509/firebase-adminsdk-dy3tx%40flutter-sl-poc-21aa3.iam.gserviceaccount.com",
-    "apiKey":"AIzaSyAMM9Hn8K6eVbtWfJcvcvSzMnicUiE1HKA"
-     */
+    // SendBird Configurations
+    public static final String SENDBIRD_API_URI = "giAi8jyvU92m0RrKrThMxRIEbE4LoWRcvT7jbaJ6dPcW3gojT+/J9x5t7BHfmXEy1OnIzR0fjL6dEehFZiIQl2uOrn0s4DbOWl8KO9Ea0Pb/LKTY6UuFKD/Wn1XP/ztl";
+    public static final String SENDBIRD_API_KEY = "/hHAGhb3agfJn+L6xa+LGPLcquMt94ojQrzPDND+59HmNDNYun7duhKjSwtegFEIv5OaRgLioia3YjlQ0/5hSugo7h3SrBD1hbUYlaVVpxZT6UmiOx3Lhy5HH/ia6kXl";
+
+
+
+
+
 }

@@ -6,7 +6,8 @@ public enum RequestBodySchemaFileEnums {
     MBTI("MBTI.graphql"),
     MBTIPolls("MBTIPolls.graphql"),
     SMS_LOGIN_OTP("SmsLoginOtp.graphql"),
-    VERIFY_OTP("VerifyOtp.graphql");
+    VERIFY_OTP("VerifyOtp.graphql"),
+    SET_MULTIPLE_DPS("SetMultipleDps.graphql");
 
     String value;
     RequestBodySchemaFileEnums(String value){

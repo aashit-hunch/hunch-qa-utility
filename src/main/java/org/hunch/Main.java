@@ -9,6 +9,8 @@ import org.hunch.models.SetupUserV2;
 import org.hunch.utils.Common;
 import org.hunch.utils.CryptoUtility;
 
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.Collections;
 import java.util.UUID;
 
@@ -39,6 +41,11 @@ public class Main {
         IO.println("Dec PASS"+CryptoUtility.decrypt(Config.DB_PASS));
         IO.println("Dec NAME"+CryptoUtility.decrypt(Config.DB_NAME));
 
-
+        try {
+            IO.println(Files.readString(Path.of("src/main/resources/userData.json")));
+        }
+        catch (Exception e){
+            e.printStackTrace();
+        }
     }
 }

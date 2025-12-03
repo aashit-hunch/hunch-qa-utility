@@ -9,6 +9,7 @@ import org.hunch.enums.Ethnicity;
 import org.hunch.enums.Gender;
 import org.hunch.enums.Tags;
 import org.hunch.utils.Common;
+import org.hunch.utils.ThreadUtils;
 
 import java.time.ZoneId;
 import java.util.ArrayList;
@@ -24,33 +25,33 @@ public class SetupUserV2 {
     @JsonInclude(JsonInclude.Include.NON_NULL)
     private class User {
         private String adjustAdid;
-        private boolean becomeCreator;
+        private Boolean becomeCreator;
         private String bio;
         private String blurredDp;
         private String collegename;
-        private ArrayList<String> datingPreference;
-        private ArrayList<String> desiredRelationshipType;
+        private List<String> datingPreference;
+        private List<String> desiredRelationshipType;
         private String dob;
         private String dp;
         private String ethnicity;
         private String ethnicityVisibility;
         private String firstName;
         private String gender;
-        private boolean genderVisibility;
+        private Boolean genderVisibility;
         private String guestUserEmail;
         private Height height;
         private ArrayList<String> interests;
-        @JsonProperty("isDeleted") private boolean isDeleted;
-        @JsonProperty("isFtueOnboarded")private boolean isFtueOnboarded;
-        @JsonProperty("isFtueOnboardingCompleted")private boolean isFtueOnboardingCompleted;
-        @JsonProperty("isPhotoUpgradeScreenRequired")private boolean isPhotoUpgradeScreenRequired;
+        @JsonProperty("isDeleted") private Boolean isDeleted;
+        @JsonProperty("isFtueOnboarded")private Boolean isFtueOnboarded;
+        @JsonProperty("isFtueOnboardingCompleted")private Boolean isFtueOnboardingCompleted;
+        @JsonProperty("isPhotoUpgradeScreenRequired")private Boolean isPhotoUpgradeScreenRequired;
         @JsonProperty("isProfileSetupStatus")private String isProfileSetupStatus;
         private String lastName;
         private String location;
         private String mimetype;
         private ArrayList<String> multipleDps;
         private String name;
-        private boolean nsfwSetting;
+        private Boolean nsfwSetting;
         private String openId;
         private String phoneNumber;
         private ProfileAttributes profileAttributes;
@@ -66,7 +67,7 @@ public class SetupUserV2 {
         private Utm utm;
         private String verificationStatus;
         private String zodiacSign;
-        private boolean zodiacSignVisibility;
+        private Boolean zodiacSignVisibility;
     }
 
     @Data
@@ -92,7 +93,7 @@ public class SetupUserV2 {
         private String type;
         private String value;
         private ArrayList<String> valueArray;
-        private boolean visibility;
+        private Boolean visibility;
     }
 
     @Data
@@ -101,7 +102,7 @@ public class SetupUserV2 {
         private String type;
         private String value;
         private ArrayList<String> valueArray;
-        private boolean visibility;
+        private Boolean visibility;
     }
 
     @Data
@@ -110,7 +111,7 @@ public class SetupUserV2 {
         private String type;
         private String value;
         private ArrayList<String> valueArray;
-        private boolean visibility;
+        private Boolean visibility;
     }
 
     @Data
@@ -132,7 +133,7 @@ public class SetupUserV2 {
         private String type;
         private String value;
         private ArrayList<String> valueArray;
-        private boolean visibility;
+        private Boolean visibility;
     }
 
     @Data
@@ -141,7 +142,7 @@ public class SetupUserV2 {
         private String type;
         private String value;
         private ArrayList<String> valueArray;
-        private boolean visibility;
+        private Boolean visibility;
     }
 
     @Data
@@ -150,7 +151,7 @@ public class SetupUserV2 {
         private String type;
         private String value;
         private ArrayList<String> valueArray;
-        private boolean visibility;
+        private Boolean visibility;
     }
 
     @Data
@@ -159,7 +160,7 @@ public class SetupUserV2 {
         private String type;
         private String value;
         private ArrayList<String> valueArray;
-        private boolean visibility;
+        private Boolean visibility;
     }
 
     @Data
@@ -168,7 +169,7 @@ public class SetupUserV2 {
         private String type;
         private String value;
         private ArrayList<String> valueArray;
-        private boolean visibility;
+        private Boolean visibility;
     }
 
     @Data
@@ -184,7 +185,7 @@ public class SetupUserV2 {
         private String type;
         private String value;
         private ArrayList<String> valueArray;
-        private boolean visibility;
+        private Boolean visibility;
     }
 
     @Data
@@ -193,7 +194,7 @@ public class SetupUserV2 {
         private String type;
         private String value;
         private ArrayList<String> valueArray;
-        private boolean visibility;
+        private Boolean visibility;
     }
 
     @Data
@@ -202,7 +203,7 @@ public class SetupUserV2 {
         private String type;
         private String value;
         private ArrayList<String> valueArray;
-        private boolean visibility;
+        private Boolean visibility;
     }
 
     @Data
@@ -211,7 +212,7 @@ public class SetupUserV2 {
         private String type;
         private String value;
         private ArrayList<String> valueArray;
-        private boolean visibility;
+        private Boolean visibility;
     }
 
     @Data
@@ -220,7 +221,7 @@ public class SetupUserV2 {
         private String type;
         private String value;
         private ArrayList<String> valueArray;
-        private boolean visibility;
+        private Boolean visibility;
     }
 
     @Data
@@ -268,7 +269,7 @@ public class SetupUserV2 {
         private String type;
         private String value;
         private ArrayList<String> valueArray;
-        private boolean visibility;
+        private Boolean visibility;
     }
 
     @Data
@@ -277,7 +278,7 @@ public class SetupUserV2 {
         private String type;
         private String value;
         private ArrayList<String> valueArray;
-        private boolean visibility;
+        private Boolean visibility;
     }
 
     @Data
@@ -290,20 +291,28 @@ public class SetupUserV2 {
 
     public  SetupUserV2 setRandomData(){
         Faker fake = new Faker();
+        ThreadUtils.userDto.get().setGender(Common.randomEnum(Gender.class));
+        ThreadUtils.userDto.get().setDating_preferences(new ArrayList<>(Collections.singleton(Common.randomEnum(Gender.class))));
+        ThreadUtils.userDto.get().setDesired_relationship_types(new ArrayList<>(Collections.singleton(Common.randomEnum(DesiredRelationshipType.class))));
+        ThreadUtils.userDto.get().setEthnicity(Common.randomEnum(Ethnicity.class));
+
         this.user = new User();
         this.user.height = new Height();
         user.setFirstName(fake.name().firstName());
         user.setDob(fake.date().birthday(18, 30).toInstant().atZone(ZoneId.systemDefault()).toLocalDate().toString());
-        user.setGender(Common.randomEnum(Gender.class).getString());
-        user.setDatingPreference(new ArrayList<>(Collections.singleton(Common.randomEnum(Gender.class).getString())));
-        user.setDesiredRelationshipType(new ArrayList<>(Collections.singleton(Common.randomEnum(DesiredRelationshipType.class).getString())));
+        user.setGender(ThreadUtils.userDto.get().getGender().getString());
+        user.setDatingPreference(ThreadUtils.userDto.get().getDating_preferences().stream()
+                .map(Gender::getString)
+                .collect(java.util.stream.Collectors.toList()));
+        user.setDesiredRelationshipType(ThreadUtils.userDto.get().getDesired_relationship_types().stream()
+                .map(DesiredRelationshipType::getString)
+                .collect(java.util.stream.Collectors.toList()));
         user.height.setFeet(fake.number().numberBetween(4, 6));
         user.height.setInches(fake.number().numberBetween(5,11));
-        user.setEthnicity(Common.randomEnum(Ethnicity.class).getDisplayName());
+        user.setEthnicity(ThreadUtils.userDto.get().getEthnicity().getDisplayName());
         setTags();
         user.setZodiacSignVisibility(true);
         user.setNsfwSetting(true);
-
         return this;
     }
 
@@ -319,5 +328,14 @@ public class SetupUserV2 {
         }
         this.user.setTags(tags);
     }
-    
+
+    public SetupUserV2 setFinalData(){
+        this.user = new User();
+        this.user.setIsProfileSetupStatus("completed");
+        user.setZodiacSignVisibility(true);
+        user.setNsfwSetting(true);
+        user.setGenderVisibility(true);
+        this.user.setIsPhotoUpgradeScreenRequired(false);
+        return this;
+    }
 }

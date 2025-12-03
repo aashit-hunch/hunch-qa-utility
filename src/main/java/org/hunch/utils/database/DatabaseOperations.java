@@ -92,7 +92,7 @@ public class DatabaseOperations {
     }
 
     // UPDATE
-    public int update(String table, JSONObject data, int id,String idColumnName) throws SQLException {
+    public int update(String table, JSONObject data, Object id,String idColumnName)  {
         StringBuilder setClause = new StringBuilder();
         List<Object> values = new ArrayList<>();
 
@@ -108,6 +108,11 @@ public class DatabaseOperations {
              PreparedStatement stmt = conn.prepareStatement(sql)) {
             setParameters(stmt, values);
             return stmt.executeUpdate();
+        }
+        catch (Exception e){
+            LOGGER.info("Exception Occurred while Updating Data into DB : "+e.getMessage());
+            e.printStackTrace();
+            return -1;
         }
     }
 
@@ -218,13 +223,22 @@ public class DatabaseOperations {
     }
 
     private void setParameters(PreparedStatement stmt, List<Object> values) throws SQLException {
+        Connection conn = stmt.getConnection();
         for (int i = 0; i < values.size(); i++) {
             Object value = values.get(i);
-
             if (value == null || value == JSONObject.NULL) {
                 stmt.setNull(i + 1, java.sql.Types.NULL);
             }
-            else if (value instanceof JSONObject || value instanceof JSONArray) {
+            else if (value instanceof JSONArray) {
+                // Robust handling for PostgreSQL text[] columns
+                JSONArray arr = (JSONArray) value;
+                String[] strArr = new String[arr.length()];
+                for (int j = 0; j < arr.length(); j++) {
+                    strArr[j] = arr.getString(j);
+                }
+                stmt.setArray(i + 1, conn.createArrayOf("text", strArr));
+            }
+            else if (value instanceof JSONObject) {
                 // Convert JSON types to string for JSON/JSONB columns
                 stmt.setObject(i + 1, value.toString(), Types.OTHER);
             }

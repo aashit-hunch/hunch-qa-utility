@@ -1,0 +1,3 @@
+mutation SetUserMultipleDps($setUserMultipleDpsInput2: [SetDpArgsInput!]!, $isEditMode: Boolean!) {
+  setUserMultipleDps(input: $setUserMultipleDpsInput2, isEditMode: $isEditMode)
+}

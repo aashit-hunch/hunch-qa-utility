@@ -2,13 +2,11 @@ package org.hunch.apis;
 
 import io.restassured.response.Response;
 import org.hunch.enums.core.RequestBodySchemaFileEnums;
-import org.hunch.models.MBTIPolls;
-import org.hunch.models.RequestBody;
-import org.hunch.models.SetupUserV2;
-import org.hunch.models.SmsLoginOtp;
-import org.hunch.utils.FirebaseJWTManager;
+import org.hunch.models.*;
+import org.hunch.utils.Common;
 import org.hunch.utils.GraphQLFileUtil;
 import org.hunch.utils.ThreadUtils;
+import org.json.JSONArray;
 import org.json.JSONObject;
 
 import java.util.Collections;
@@ -24,6 +22,18 @@ public class APIService {
         requestBody.setQuery(GraphQLFileUtil.readGraphQLFromFileSystem(RequestBodySchemaFileEnums.SetupUserV2));
         SetupUserV2 setupUserV2 = new SetupUserV2();
         setupUserV2.setRandomData();
+        requestBody.setVariables(setupUserV2);
+        apiObj.setRequestBody(requestBody.toString());
+        apiObj.apiCall();
+    }
+
+    public static void setupV2FinalCall(){
+        BaseApi apiObj = new BaseApi();
+        apiObj.addHeader("Authorization", ThreadUtils.jwtToken.get());
+        RequestBody requestBody= new RequestBody();
+        requestBody.setQuery(GraphQLFileUtil.readGraphQLFromFileSystem(RequestBodySchemaFileEnums.SetupUserV2));
+        SetupUserV2 setupUserV2 = new SetupUserV2();
+        setupUserV2.setFinalData();
         requestBody.setVariables(setupUserV2);
         apiObj.setRequestBody(requestBody.toString());
         apiObj.apiCall();
@@ -77,5 +87,32 @@ public class APIService {
         Response resp = apiObj.apiCall();
         //String jwtToken = FirebaseJWTManager.getInstance().transformTokenAToTokenB(resp.jsonPath().getString("data.verifyOtp"));
         //ThreadUtils.jwtToken.set(jwtToken);
+    }
+
+    public static void uploadDps(){
+        JSONArray obj = Common.getUserData();
+        SetMultipleDps dps = new SetMultipleDps();
+        ThreadUtils.userDto.get().setMainDpUrl(obj.getJSONObject(0).getString("dp"));
+        ThreadUtils.userDto.get().setOtherDpUrls(obj.getJSONObject(0).getJSONArray("multiple_dps").toList().stream()
+                .map(Object::toString)
+                .map(url -> url.replace("\\", ""))
+                .toList());
+        dps.setDps(ThreadUtils.userDto.get().getMainDpUrl(),ThreadUtils.userDto.get().getOtherDpUrls());
+
+        BaseApi apiObj = new BaseApi();
+        apiObj.addHeader("Authorization", ThreadUtils.jwtToken.get());
+        RequestBody requestBody= new RequestBody();
+        requestBody.setQuery(GraphQLFileUtil.readGraphQLFromFileSystem(RequestBodySchemaFileEnums.SET_MULTIPLE_DPS));
+        requestBody.setVariables(dps);
+        apiObj.setRequestBody(requestBody.toString());
+        apiObj.apiCall();
+    }
+
+    public static void sendBirdUpdateDp(){
+        SendBirdUpdate up = new SendBirdUpdate(ThreadUtils.userDto.get().getUser_id());
+        JSONObject re = new JSONObject();
+        re.put("profile_url",ThreadUtils.userDto.get().getMainDpUrl());
+        up.setRequestBody(re.toString());
+        up.apiCall();
     }
 }

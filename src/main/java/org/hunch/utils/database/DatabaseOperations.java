@@ -9,6 +9,8 @@ import java.sql.*;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.List;
+import org.postgresql.util.*;
+import java.sql.*;
 
 public class DatabaseOperations {
 
@@ -39,11 +41,13 @@ public class DatabaseOperations {
             }
 
             String sql = String.format("INSERT INTO %s (%s) VALUES (%s) RETURNING "+idColumnName, table, cols, placeholders);
-            Connection conn = dbConnection.getConnection();
-            PreparedStatement stmt = conn.prepareStatement(sql);
-            setParameters(stmt, values);
-            ResultSet rs = stmt.executeQuery();
-            return rs.next() ? rs.getInt(idColumnName) : -1;
+            try(Connection conn = dbConnection.getConnection();
+            PreparedStatement stmt = conn.prepareStatement(sql)){
+                setParameters(stmt, values);
+                ResultSet rs = stmt.executeQuery();
+                return rs.next() ? rs.getInt(idColumnName) : -1;
+            }
+
         }catch (SQLException w){
             LOGGER.info("Exception Occurred while Inserting Data into DB : "+w.getMessage());
             return -1;
@@ -117,13 +121,38 @@ public class DatabaseOperations {
     }
 
     // DELETE
-    public int delete(String table, int id,String idColumnName) throws SQLException {
-        String sql = String.format("DELETE FROM %s WHERE "+idColumnName+" = ?", table);
-        try (Connection conn = dbConnection.getConnection();
-             PreparedStatement stmt = conn.prepareStatement(sql)) {
+    public int delete(String table, int id,String idColumnName)  {
+        try{
+            String sql = String.format("DELETE FROM %s WHERE "+idColumnName+" = ?", table);
+            Connection conn = dbConnection.getConnection();
+            PreparedStatement stmt = conn.prepareStatement(sql);
             stmt.setInt(1, id);
             return stmt.executeUpdate();
         }
+        catch (Exception e){
+            throw new RuntimeException("Exception Occurred while Deleting Data from DB : "+e);
+        }
+
+    }
+
+    /**
+     * Delete records from a table using a custom WHERE clause and parameters.
+     * Example usage:
+     *   deleteWhere("goss_requests", "sender_id IN (?, ?) AND receiver_id IN (?, ?) AND is_crush = ?", senderId1, senderId2, receiverId1, receiverId2, false);
+     */
+    public int deleteWhere(String table, String whereClause, Object... params){
+        try {
+            String sql = String.format("DELETE FROM %s WHERE %s", table, whereClause);
+            Connection conn = dbConnection.getConnection();
+            PreparedStatement stmt = conn.prepareStatement(sql);
+            for (int i = 0; i < params.length; i++) {
+                stmt.setObject(i + 1, params[i]);
+            }
+            return stmt.executeUpdate();
+        } catch (Exception e) {
+            throw new RuntimeException("Exception Occurred while Deleting Data from DB : "+e);
+        }
+
     }
 
     // ==================== CUSTOM JSON METHODS ====================
@@ -139,9 +168,8 @@ public class DatabaseOperations {
             return resultSetToJsonArray(stmt.executeQuery());
         }
         catch (SQLException e){
-            LOGGER.info("Exception Occurred while executing Query : "+e.getMessage());
+            throw  new RuntimeException("Exception Occurred while executing Query : "+e.getMessage());
         }
-        return new JSONArray();
     }
 
     // Execute raw query and return single JSONObject
@@ -215,6 +243,25 @@ public class DatabaseOperations {
             for (int i = 1; i <= cols; i++) {
                 String colName = meta.getColumnLabel(i);
                 Object value = rs.getObject(i);
+                // Handle PGobject for JSON/JSONB columns
+                if (value instanceof PGobject) {
+                    PGobject pgObj = (PGobject) value;
+                    String type = pgObj.getType();
+                    String pgValue = pgObj.getValue();
+                    if (("json".equalsIgnoreCase(type) || "jsonb".equalsIgnoreCase(type)) && pgValue != null) {
+                        value = new JSONObject(pgValue);
+                    } else {
+                        value = pgValue;
+                    }
+                } else if (value instanceof Array) {
+                    // Handle SQL Array columns (e.g., text[])
+                    Object arrSql = ((Array) value).getArray();
+                    if (arrSql instanceof Object[]) {
+                        value = new JSONArray((Object[]) arrSql);
+                    } else {
+                        value = arr != null ? new JSONArray().put(arrSql) : JSONObject.NULL;
+                    }
+                }
                 obj.put(colName, value != null ? value : JSONObject.NULL);
             }
             arr.put(obj);

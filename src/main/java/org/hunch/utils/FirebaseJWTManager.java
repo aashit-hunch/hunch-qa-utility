@@ -48,7 +48,7 @@ public class FirebaseJWTManager {
      * Initialize Firebase Admin SDK
      */
     static {
-        firebaseServiceAccount = new FirebaseServiceAccount().setFirebaseAccount();
+        firebaseServiceAccount = new FirebaseServiceAccount().setFirebaseAccountProd();
         if (FirebaseApp.getApps().isEmpty()) {
             InputStream serviceAccount = new ByteArrayInputStream(
                     firebaseServiceAccount.toString().getBytes(StandardCharsets.UTF_8)

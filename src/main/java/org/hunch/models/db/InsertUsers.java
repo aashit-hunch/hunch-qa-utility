@@ -153,6 +153,7 @@ public class InsertUsers {
         this.name="";
         this.bio="";
         this.dp="";
+        this.signupAppVersion=appVersion;
         this.replicatedAt= Common.getCurrentTimestamp();
     }
     public void insertSignupLocationDetails(String ipCity, String ipRegion, String ipCountry) {

@@ -1,0 +1,494 @@
+query GetUnifiedFeed($pagination: PaginationInput, $modelVariant: String, $shareProfileId: String) {
+    getUnifiedFeed(pagination: $pagination, modelVariant: $modelVariant, shareProfileId: $shareProfileId) {
+        items {
+            type
+            sections {
+                ... on PollSectionGeneralPoll {
+                    poll_section_type
+                    id
+                    question
+                    mbtiDimension
+                    options {
+                        id
+                        text
+                    }
+                }
+                ... on PollSectionPrompt {
+                    poll_section_type
+                    id
+                    question
+                    mbtiDimension
+                    promptTimeout
+                }
+                ... on ProfileSectionProfileInfo {
+                    profile_section_type
+                    imageUrl
+                    waveStatus
+                    name
+                    age
+                    activeToday
+                    gender
+                    genderVisibility
+                    pronouns
+                    score
+                    title
+                    matchExplainerAvailable
+                }
+                ... on ProfileSectionShortVibe {
+                    profile_section_type
+                    typeLabel
+                    question
+                    shortVibe
+                    waveStatus
+                }
+                ... on ProfileSectionIconGrid {
+                    profile_section_type
+                    horizontalSection {
+                        icon
+                        title
+                        items {
+                            id
+                            icon
+                            text
+                        }
+                    }
+                    verticalSection {
+                        icon
+                        title
+                    }
+                    capsuleSection {
+                        icon
+                        title
+                    }
+                }
+                ... on ProfileSectionImageCard {
+                    profile_section_type
+                    imageUrl
+                    waveStatus
+                    isBlurred
+                    blurConfig {
+                        description
+                        unBlurActionText
+                    }
+                }
+                ... on ProfileSectionHighlightCard {
+                    profile_section_type
+                    header
+                    waveStatus
+                    subheader
+                    description
+                }
+                ... on ProfileSectionThisOrThat {
+                    profile_section_type
+                    imageUrl
+                    waveStatus
+                    rows {
+                        text
+                        imageUrl
+                    }
+                    totalRows
+                    matchScoreLabel
+                    score
+                }
+                ... on ThisOrThatV2ScrollableSection {
+                    profile_section_type
+                    title
+                    subtitle
+                    ftux_shown
+                    total_cards
+                    total_questions_answered
+                    quiz_completion_rate
+                    other_user_id
+                    user_id
+                    carousel_items {
+                        question_id
+                        question_text
+                        user_answer
+                        other_user_answer
+                        is_visible
+                        relevance_score
+                        camp_type
+                        conversation_hint
+                        cta
+                        photo_urls {
+                            user_dp
+                            other_user_dp
+                        }
+                    }
+                    fluxCarouselItems {
+                        title
+                        url
+                    }
+                    thisOrThatExtraData{
+                        this_that_answered_by_user
+                        this_that_answered_by_other_user
+                        common_this_that_answered
+                    }
+                }
+                ... on ProfileSectionScoreCard {
+                    profile_section_type
+                    title
+                    titleIcon
+                    description
+                    scores {
+                        dominantTrait
+                        percentageScore
+                        primaryTrait
+                        secondaryTrait
+                        primaryTraitPercentageScore
+                        secondaryTraitPercentageScore
+                    }
+                    compatibility {
+                        description
+                        finalScore
+                        totalScore
+                    }
+                    explaination {
+                        title
+                        description
+                        sections {
+                            sectionType
+                            title
+                            description
+                            dimensions {
+                                title
+                                description
+                                isSelected
+                                score
+                                type
+                                imageUrl
+                            }
+                        }
+                        scores {
+                            dimension
+                            score
+                        }
+                    }
+                    lockedConfig {
+                        not_started {
+                            description
+                            title
+                            titleIcon
+                            buttonCta
+                        }
+                        in_progress {
+                            description
+                            title
+                            titleIcon
+                            buttonCta
+                        }
+                        completed {
+                            description
+                            title
+                            titleIcon
+                            buttonCta
+                        }
+                    }
+                }
+                ... on ProfileSectionMatchExplainer {
+                    profile_section_type
+                    header
+                    headerIcon
+                    displayPictures
+                    title
+                    score
+                    description
+                    buttonCta
+                    waveStatus
+                }
+            }
+            extraData {
+                ... on FeedItemPollExtraData {
+                    progressBar {
+                        total
+                        current
+                        label
+                    }
+                    type
+                }
+                ... on FeedItemProfileExtraData {
+                    type
+                    isBoosted
+                    pollCategory
+                    score
+                    shortVibe {
+                        vibe
+                        shortVibeType
+                        poll {
+                            question
+                            id
+                        }
+                    }
+                    user {
+                        vibeTribeFilters {
+                            filters {
+                                id
+                                name
+                                type
+                                description
+                                header
+                                min
+                                max
+                                unit
+                                stepSize
+                                subHeader
+
+                            }
+                        }
+                        suspendedTill
+                        isBlockedByUser
+                        isUserBlocked
+                        isFollower
+                        isFollowing
+                        latitude
+                        longitude
+                        gender
+                        age
+                        dp
+                        username
+                        userUid
+                        country
+                        countryGroup
+                        multipleDps
+                        height {
+                            feet
+                            inches
+                        }
+                        source
+                        zodiacSign
+                        desiredRelationshipType
+                        location
+                        isActiveToday
+                        profileHighlights {
+                            polls {
+                                id
+                                title
+                                question
+                                description
+                                categories
+                                createdBy
+                                createdFrom
+                                displayType
+                                selectedMediaType
+                                displayUrl
+                                featuredTag
+                                shareCount
+                                tags
+                                createdAt
+                                endTime
+                                scheduleTime
+                                status
+                                activityId
+                                recommendationId
+                                isArchived
+                                hideFromProfile
+                                slug
+                                pollType
+                                countryGroups
+                                abusive
+                                nsfwContent
+                                isModerated
+                                modelType
+                                campaignId
+                                campaignType
+                                rank
+                                score
+                                batchId
+                                thumbnailUrl
+                                pollabilityFtueScore
+
+                                contentCreationType
+                                commentabilityScore
+                                servingModelVersion
+                                userSeenByModel
+                                extra_params
+                                pinnedComments
+                                commentsCount
+                                allCommentsCount
+                                promptsCount
+                                votesCount
+
+                                voteCastedOptionId
+                                upVotes
+                                isUserBlocked
+                                upDownCastedAction
+                                isBlockedByUser
+                                isSubscribed
+                                shareUrl
+                                shareableUrl
+
+                                verticleImageAI
+                                createdByUserUid
+                                isUserCommented
+                                pollViews
+                                type
+                                promptTimeout
+                            }
+                            comments {
+                                id
+                                text
+                                createdAt
+                                updatedAt
+                                userId
+                                pollId
+                                isComment
+                                mentions
+                                mentionUuids
+                                isDeleted
+                                likesCount
+                                deletedTillTs
+                                deletedThreadTillTs
+                                visibilityStatus
+                                contentCreationType
+                                finalCommentScore
+
+                                repliesCount
+                                likedId
+                                isUserBlocked
+                                upVotes
+                                upDownCastedAction
+                                isBlockedByUser
+                                deleteText
+
+                                createdByUserUid
+                            }
+                            voteOneLiner {
+                                question
+                                oneLiner
+                                id
+                            }
+                            oneLiners
+                            prompts {
+                                id
+                                prompt
+                                response
+                                skipped
+                                createdAt
+                                updatedAt
+                            }
+                            thisOrThatOptions {
+                                total
+                            }
+                        }
+                        subGender
+                        genderVisibility
+                        ethnicity
+                        ethnicityVisibility
+                        profileAttributes {
+                            exercise {
+                                value
+                                valueArray
+                                type
+                                visibility
+                            }
+                            homeTown {
+                                value
+                                valueArray
+                                type
+                                visibility
+                            }
+                            educationLevel {
+                                value
+                                valueArray
+                                type
+                                visibility
+                            }
+                            workplace {
+                                value
+                                valueArray
+                                type
+                                visibility
+                            }
+                            occupation {
+                                value
+                                valueArray
+                                type
+                                visibility
+                            }
+                            drinkingHabits {
+                                value
+                                valueArray
+                                type
+                                visibility
+                            }
+                            smokingHabits {
+                                value
+                                valueArray
+                                type
+                                visibility
+                            }
+                            weedUsage {
+                                value
+                                valueArray
+                                type
+                                visibility
+                            }
+                            drugUsage {
+                                value
+                                valueArray
+                                type
+                                visibility
+                            }
+                            dietaryPreference {
+                                value
+                                valueArray
+                                type
+                                visibility
+                            }
+                            familyPlans {
+                                value
+                                valueArray
+                                type
+                                visibility
+                            }
+                            petPreference {
+                                value
+                                valueArray
+                                type
+                                visibility
+                            }
+                            politics {
+                                value
+                                valueArray
+                                type
+                                visibility
+                            }
+                            religion {
+                                value
+                                valueArray
+                                type
+                                visibility
+                            }
+                            languages {
+                                value
+                                valueArray
+                                type
+                                visibility
+                            }
+                        }
+                        pronouns
+                        firstName
+                        bio
+                        tags {
+                            parent
+                            icon
+                            tagName
+                        }
+                        mbtiType
+                    }
+                    userUid
+                    raw_score
+                    score_meta
+                    profileType
+                }
+            }
+        }
+        pagination {
+            nextCursor {
+                batchTimestamp
+            }
+            hasMore
+            shareProfileId
+        }
+    }
+}

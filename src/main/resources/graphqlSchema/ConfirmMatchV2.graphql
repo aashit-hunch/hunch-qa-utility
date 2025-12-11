@@ -1,0 +1,5 @@
+    mutation ConfirmMatchV2($input: ConfirmMatchV2Input!) {
+      confirmMatchV2(input: $input) {
+        channelUrl
+      }
+    }

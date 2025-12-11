@@ -1,0 +1,6 @@
+mutation UserGoelocation($input: UserGeoLocationInput) {
+  userGoelocation(input: $input) {
+    latitude
+    longitude
+  }
+}

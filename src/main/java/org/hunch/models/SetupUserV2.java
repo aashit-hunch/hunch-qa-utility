@@ -1,9 +1,11 @@
 package org.hunch.models;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.github.javafaker.Faker;
 import lombok.Data;
+import org.hunch.constants.GlobalData;
 import org.hunch.enums.DesiredRelationshipType;
 import org.hunch.enums.Ethnicity;
 import org.hunch.enums.Gender;
@@ -15,12 +17,13 @@ import java.time.ZoneId;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.concurrent.TimeUnit;
 
 @Data
 @JsonInclude(JsonInclude.Include.NON_NULL)
 public class SetupUserV2 {
     private User user;
-
+    @JsonIgnore Faker fake = new Faker();
     @Data
     @JsonInclude(JsonInclude.Include.NON_NULL)
     private class User {
@@ -289,34 +292,33 @@ public class SetupUserV2 {
         private String tagName;
     }
 
+    public SetupUserV2() {
+        this.user = new User();
+        this.user.setZodiacSignVisibility(true);
+        this.user.setNsfwSetting(true);
+    }
+    /**
+     * Sets random data for user profile setup
+     * @return
+     */
     public  SetupUserV2 setRandomData(){
-        Faker fake = new Faker();
-        ThreadUtils.userDto.get().setGender(Common.randomEnum(Gender.class));
-        ThreadUtils.userDto.get().setDating_preferences(new ArrayList<>(Collections.singleton(Common.randomEnum(Gender.class))));
-        ThreadUtils.userDto.get().setDesired_relationship_types(new ArrayList<>(Collections.singleton(Common.randomEnum(DesiredRelationshipType.class))));
-        ThreadUtils.userDto.get().setEthnicity(Common.randomEnum(Ethnicity.class));
 
         this.user = new User();
-        this.user.height = new Height();
-        user.setFirstName(fake.name().firstName());
-        user.setDob(fake.date().birthday(18, 30).toInstant().atZone(ZoneId.systemDefault()).toLocalDate().toString());
-        user.setGender(ThreadUtils.userDto.get().getGender().getString());
-        user.setDatingPreference(ThreadUtils.userDto.get().getDating_preferences().stream()
-                .map(Gender::getString)
-                .collect(java.util.stream.Collectors.toList()));
-        user.setDesiredRelationshipType(ThreadUtils.userDto.get().getDesired_relationship_types().stream()
-                .map(DesiredRelationshipType::getString)
-                .collect(java.util.stream.Collectors.toList()));
-        user.height.setFeet(fake.number().numberBetween(4, 6));
-        user.height.setInches(fake.number().numberBetween(5,11));
-        user.setEthnicity(ThreadUtils.userDto.get().getEthnicity().getDisplayName());
+        setFirstName();
+        setDob();
+        setGender();
+        setDatingPreference();
+        setDesiredRelationshipType();
+        setEthinicity();
+        setHeight();
         setTags();
-        user.setZodiacSignVisibility(true);
-        user.setNsfwSetting(true);
         return this;
     }
 
-    private void setTags(){
+    /**
+     * Sets random tags for the user profile
+     */
+    public void setTags(){
         ArrayList<Tag> tags = new ArrayList<>();
         List<Tags> tagsEnum = Common.getRandomEnumList(Tags.class,10);
         for(int i=0;i<tagsEnum.size();i++){
@@ -329,13 +331,101 @@ public class SetupUserV2 {
         this.user.setTags(tags);
     }
 
+    /**
+     * Final setup call to mark profile setup as completed
+     * @return
+     */
     public SetupUserV2 setFinalData(){
         this.user = new User();
         this.user.setIsProfileSetupStatus("completed");
-        user.setZodiacSignVisibility(true);
-        user.setNsfwSetting(true);
-        user.setGenderVisibility(true);
+        this.user.setZodiacSignVisibility(true);
+        this.user.setNsfwSetting(true);
+        this.user.setGenderVisibility(true);
         this.user.setIsPhotoUpgradeScreenRequired(false);
         return this;
     }
+
+    public SetupUserV2 setDob(int... dob){
+        if(dob.length>0){
+            this.user.setDob(fake.date().past(dob[0]*365, TimeUnit.DAYS).toInstant().atZone(ZoneId.systemDefault()).toLocalDate().toString());
+            return this;
+        }
+        else {
+            this.user.setDob(fake.date().birthday(18, 30).toInstant().atZone(ZoneId.systemDefault()).toLocalDate().toString());
+        }
+        return this;
+    }
+
+    public SetupUserV2 setFirstName(String... firstName){
+        if(firstName.length>0){
+            this.user.setFirstName(firstName[0]);
+            return this;
+        }
+        this.user.setFirstName(fake.name().firstName());
+        return this;
+    }
+
+    public SetupUserV2 setGender(String... gender) {
+        if (gender.length > 0) {
+            ThreadUtils.userDto.get().setGender(Gender.fromString(gender[0]));
+        } else if (GlobalData.USER_PROVIDED_DATA) {
+            ThreadUtils.userDto.get().setGender(GlobalData.GENDER_TYPE);
+        } else {
+            ThreadUtils.userDto.get().setGender(Common.randomEnum(Gender.class));
+        }
+        this.user.setGender(ThreadUtils.userDto.get().getGender().getString());
+        return this;
+    }
+
+    public SetupUserV2 setDatingPreference(String... datingPreference) {
+        if (datingPreference.length > 0) {
+            ThreadUtils.userDto.get().setDating_preferences(new ArrayList<>(Collections.singleton(Gender.fromString(datingPreference[0]))));
+        } else if (GlobalData.USER_PROVIDED_DATA) {
+            ThreadUtils.userDto.get().setDating_preferences(new ArrayList<>(Collections.singleton(GlobalData.GENDER_TYPE_PREFERENCE)));
+        } else {
+            ThreadUtils.userDto.get().setDating_preferences(new ArrayList<>(Collections.singleton(Common.randomEnum(Gender.class))));
+        }
+        this.user.setDatingPreference(ThreadUtils.userDto.get().getDating_preferences().stream()
+                .map(Gender::getString)
+                .collect(java.util.stream.Collectors.toList()));
+        return this;
+    }
+
+    public SetupUserV2 setDesiredRelationshipType(String... desiredRelationshipType) {
+        if (desiredRelationshipType.length > 0) {
+            ThreadUtils.userDto.get().setDesired_relationship_types(new ArrayList<>(Collections.singleton(DesiredRelationshipType.fromString(desiredRelationshipType[0]))));
+        }else {
+            ThreadUtils.userDto.get().setDesired_relationship_types(new ArrayList<>(Collections.singleton(Common.randomEnum(DesiredRelationshipType.class))));
+        }
+        this.user.setDesiredRelationshipType(ThreadUtils.userDto.get().getDesired_relationship_types().stream()
+                .map(DesiredRelationshipType::getString)
+                .collect(java.util.stream.Collectors.toList()));
+        return this;
+    }
+
+    public SetupUserV2 setEthinicity(String... Ethinicity) {
+        if (Ethinicity.length > 0) {
+
+            ThreadUtils.userDto.get().setEthnicity(Ethnicity.fromString(Ethinicity[0]));
+        } else {
+            ThreadUtils.userDto.get().setEthnicity(Common.randomEnum(Ethnicity.class));
+        }
+        this.user.ethnicity= ThreadUtils.userDto.get().getEthnicity().getDisplayName();
+
+        return this;
+    }
+
+    public SetupUserV2 setHeight(int... height){
+        this.user.height = new Height();
+        if(height.length==2){
+            this.user.height.setFeet(height[0]);
+            this.user.height.setInches(height[1]);
+            return this;
+        }
+        this.user.height.setFeet(fake.number().numberBetween(4, 6));
+        this.user.height.setInches(fake.number().numberBetween(5,11));
+        return this;
+    }
+
+
 }

@@ -7,7 +7,11 @@ public enum RequestBodySchemaFileEnums {
     MBTIPolls("MBTIPolls.graphql"),
     SMS_LOGIN_OTP("SmsLoginOtp.graphql"),
     VERIFY_OTP("VerifyOtp.graphql"),
-    SET_MULTIPLE_DPS("SetMultipleDps.graphql");
+    SET_MULTIPLE_DPS("SetMultipleDps.graphql"),
+    GET_UNIFIED_FEED("GetUnifiedFeed.graphql"),
+    INITIATE_WAVE("InitiateWave.graphql"),
+    CONFIRM_MATCH_V2("ConfirmMatchV2.graphql"),
+    USER_GEOLOCATION("UserGoelocation.graphql");
 
     String value;
     RequestBodySchemaFileEnums(String value){

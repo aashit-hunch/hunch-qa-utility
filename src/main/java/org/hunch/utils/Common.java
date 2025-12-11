@@ -1,10 +1,16 @@
 package org.hunch.utils;
 
+import com.google.firebase.auth.FirebaseAuthException;
 import org.apache.log4j.Logger;
+import org.hunch.dto.UserDetailsDTO;
+import org.hunch.enums.Ethnicity;
+import org.hunch.enums.Gender;
+import org.hunch.enums.DesiredRelationshipType;
 import org.json.JSONArray;
 import org.json.JSONObject;
 import tools.jackson.databind.ObjectMapper;
 
+import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.security.SecureRandom;
@@ -54,18 +60,33 @@ public class Common {
         return LocalDateTime.now().format(formatter);
     }
 
+    public static String getFutureTimestamp(int days) {
+        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss.SSS");
+        LocalDateTime futureDate = LocalDateTime.now().plusDays(days);
+        return futureDate.format(formatter);
+    }
+
+    public static String getPastTimestamp(int days) {
+        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss.SSS");
+        LocalDateTime pastDate = LocalDateTime.now().minusDays(days);
+        return pastDate.format(formatter);
+    }
+
     public static JSONArray getUserData(){
         try{
             String json = Files.readString(Path.of(System.getProperty("user.dir")+"/src/main/resources/userData.json"));
             JSONArray obj = new JSONArray(json);
-            List<Object> list = obj.toList();;
-            Collections.shuffle(list);
-            obj = new JSONArray(list);
+            obj= shuffleJsonArray(obj);
             return obj;
         }
         catch (Exception e){
             throw  new RuntimeException("Exception occurred while reading user data json: "+e.getMessage());
         }
+    }
+    public static JSONArray shuffleJsonArray(JSONArray array){
+        List<Object> list = array.toList();
+        Collections.shuffle(list);
+        return new JSONArray(list);
     }
 
     public static JSONObject getLivenessData(){
@@ -77,6 +98,57 @@ public class Common {
         catch (Exception e){
             throw  new RuntimeException("Exception occurred while reading liveness data json: "+e.getMessage());
         }
+    }
+
+    public static void setUserDtoViaJsonObject(JSONObject jsonObject){
+        try{
+            UserDetailsDTO dto = new UserDetailsDTO();
+            dto.setUser_id(jsonObject.getString("user_uid"));
+            dto.setEmail(jsonObject.getString("email"));
+            dto.setPhone_number(jsonObject.getString("phone_number"));
+            dto.setMainDpUrl(jsonObject.getString("dp"));
+            dto.setGender(Gender.fromString(jsonObject.getString("gender")));
+            dto.setOtherDpUrls(
+                jsonObject.getJSONArray("multiple_dps")
+                .toList()
+                .stream()
+                .map(Object::toString)
+                .toList());
+            dto.setEthnicity(Ethnicity.fromString(jsonObject.getString("ethnicity")));
+            dto.setDesired_relationship_types(
+                jsonObject.getJSONArray("desired_relationship_type")
+                    .toList()
+                    .stream()
+                    .map(Object::toString)
+                    .map(DesiredRelationshipType::fromString)
+                    .toList());
+            dto.setDating_preferences(
+                    jsonObject.getJSONArray("dating_preference")
+                            .toList()
+                            .stream()
+                            .map(Object::toString)
+                            .map(Gender::fromString)
+                            .toList());
+            ThreadUtils.userDto.set(dto);
+        }
+        catch (Exception e){
+            throw new RuntimeException("Exception occurred while setting UserDto from JSONArray : "+e.getMessage());
+        }
+    }
+
+    /**
+     * Generate Firebase Token from JSON Object of Database record
+     * @param jsonObject
+     * @return
+     */
+    public static String generateFirebaseToken(JSONObject jsonObject) throws IOException, FirebaseAuthException, InterruptedException {
+        FirebaseJWTManager.UserDetails ud = new FirebaseJWTManager.UserDetails.Builder().setUserId(jsonObject.getString("user_uid"))
+                .setEmail(jsonObject.getString("email"))
+                .setPhoneNumber(jsonObject.getString("phone_number"))
+                .build();
+
+        FirebaseJWTManager.TokenPair tk =FirebaseJWTManager.getInstance().performTokenExchange(ud);
+        return tk.getTokenB();
     }
 
 }

@@ -1,0 +1,6 @@
+        mutation InitiateWave($input: WaveRequestInput!) {
+          initiateWave(input: $input) {
+            id
+            status
+          }
+        }

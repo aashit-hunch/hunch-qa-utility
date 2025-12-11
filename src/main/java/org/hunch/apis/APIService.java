@@ -1,7 +1,12 @@
 package org.hunch.apis;
 
+import com.github.javafaker.Faker;
 import io.restassured.response.Response;
+import org.hunch.enums.ActionTriggersForAcceptMatch;
+import org.hunch.enums.WaveRequestTypeEnum;
+import org.hunch.enums.WaveRequestedFromEnum;
 import org.hunch.enums.core.RequestBodySchemaFileEnums;
+import org.hunch.enums.core.SetupV2Journey;
 import org.hunch.models.*;
 import org.hunch.utils.Common;
 import org.hunch.utils.GraphQLFileUtil;
@@ -22,6 +27,40 @@ public class APIService {
         requestBody.setQuery(GraphQLFileUtil.readGraphQLFromFileSystem(RequestBodySchemaFileEnums.SetupUserV2));
         SetupUserV2 setupUserV2 = new SetupUserV2();
         setupUserV2.setRandomData();
+        requestBody.setVariables(setupUserV2);
+        apiObj.setRequestBody(requestBody.toString());
+        apiObj.apiCall();
+    }
+
+    public static void setupV2WithSpecificData(SetupV2Journey journey){
+        BaseApi apiObj = new BaseApi();
+        apiObj.addHeader("Authorization", ThreadUtils.jwtToken.get());
+        RequestBody requestBody= new RequestBody();
+        requestBody.setQuery(GraphQLFileUtil.readGraphQLFromFileSystem(RequestBodySchemaFileEnums.SetupUserV2));
+        SetupUserV2 setupUserV2 = new SetupUserV2();
+        switch (journey) {
+            case tags:
+                setupUserV2.setTags();
+            case ethnicity:
+                setupUserV2.setEthinicity();
+            case height:
+                setupUserV2.setHeight();
+            case relationshipType:
+                setupUserV2.setDesiredRelationshipType();
+            case datingPreferences:
+                setupUserV2.setDatingPreference();
+            case gender:
+                setupUserV2.setGender();
+            case dob:
+                setupUserV2.setDob();
+            case firstName:
+                setupUserV2.setFirstName();
+                break;
+            default:
+                return;
+                // Do nothing
+        }
+
         requestBody.setVariables(setupUserV2);
         apiObj.setRequestBody(requestBody.toString());
         apiObj.apiCall();
@@ -92,11 +131,16 @@ public class APIService {
     public static void uploadDps(){
         JSONArray obj = Common.getUserData();
         SetMultipleDps dps = new SetMultipleDps();
-        ThreadUtils.userDto.get().setMainDpUrl(obj.getJSONObject(0).getString("dp"));
-        ThreadUtils.userDto.get().setOtherDpUrls(obj.getJSONObject(0).getJSONArray("multiple_dps").toList().stream()
-                .map(Object::toString)
-                .map(url -> url.replace("\\", ""))
-                .toList());
+        for (int i=0;i<obj.length();i++){
+            if(obj.getJSONObject(i).getString("gender").equalsIgnoreCase(ThreadUtils.userDto.get().getGender().getString())){
+                ThreadUtils.userDto.get().setMainDpUrl(obj.getJSONObject(i).getString("dp"));
+                ThreadUtils.userDto.get().setOtherDpUrls(obj.getJSONObject(i).getJSONArray("multiple_dps").toList().stream()
+                        .map(Object::toString)
+                        .map(url -> url.replace("\\", ""))
+                        .toList());
+                break;
+            }
+        }
         dps.setDps(ThreadUtils.userDto.get().getMainDpUrl(),ThreadUtils.userDto.get().getOtherDpUrls());
 
         BaseApi apiObj = new BaseApi();
@@ -108,11 +152,102 @@ public class APIService {
         apiObj.apiCall();
     }
 
-    public static void sendBirdUpdateDp(){
+    public static void sendBirdUpdateDp(String... dpUrl){
         SendBirdUpdate up = new SendBirdUpdate(ThreadUtils.userDto.get().getUser_id());
-        JSONObject re = new JSONObject();
-        re.put("profile_url",ThreadUtils.userDto.get().getMainDpUrl());
-        up.setRequestBody(re.toString());
+        SendBird obj = new SendBird();
+        if (dpUrl.length>0){
+            obj.setProfile_url(dpUrl[0]);
+        }
+        else  obj.setProfile_url(ThreadUtils.userDto.get().getMainDpUrl());
+        up.setRequestBody(Common.mapper.writeValueAsString(obj));
         up.apiCall();
+    }
+
+    public static void sendBirdCreateUser(JSONObject userDetails){
+        SendBirdCreate sendBirdCreate = new SendBirdCreate();
+        SendBird obj = new SendBird();
+        obj.setNickname(userDetails.getString("username"));
+        obj.setUser_id(userDetails.getString("user_uid"));
+        obj.setProfile_url(userDetails.getString("dp"));
+        sendBirdCreate.setRequestBody(Common.mapper.writeValueAsString(obj));
+        sendBirdCreate.apiCall();
+
+    }
+
+    public static Response sendBirdGetUser(String userUid){
+        SendBirdGet sendBirdGet = new SendBirdGet(userUid);
+        return sendBirdGet.apiCall();
+    }
+
+    public static Response sendBirdSendMessage(String channelUrl, String user_uid) {
+        SendBirdSendMessage sendBirdSendMessage = new SendBirdSendMessage(channelUrl);
+        SendBirdMessage obj = new SendBirdMessage();
+        obj.setMessage(Faker.instance().superhero().descriptor());
+        obj.setUser_id(user_uid);
+        obj.setMessage_type("MESG");
+        obj.setOrigin("crush");
+        obj.setSend_push(true);
+        sendBirdSendMessage.setRequestBody(Common.mapper.writeValueAsString(obj));
+        return sendBirdSendMessage.apiCall();
+    }
+
+    public static void getUnifiedFeed(){
+        BaseApi apiObj = new BaseApi();
+        apiObj.addHeader("Authorization", ThreadUtils.jwtToken.get());
+        RequestBody requestBody= new RequestBody();
+        requestBody.setQuery(GraphQLFileUtil.readGraphQLFromFileSystem(RequestBodySchemaFileEnums.GET_UNIFIED_FEED));
+        apiObj.setRequestBody(requestBody.toString());
+        apiObj.apiCall();
+    }
+
+    public static Response initiateWave(String receiverUserUid,boolean isCrushWave,String receiverDp,String waveId,String... JWT){
+        BaseApi apiObj = new BaseApi();
+        if(JWT.length>0){
+            apiObj.addHeader("Authorization", JWT[0]);
+        }else apiObj.addHeader("Authorization", ThreadUtils.jwtToken.get());
+        RequestBody requestBody= new RequestBody();
+        requestBody.setQuery(GraphQLFileUtil.readGraphQLFromFileSystem(RequestBodySchemaFileEnums.INITIATE_WAVE));
+        InitiateWaveVariable initiateWaveVariable = new InitiateWaveVariable();
+        WaveRequestedFromEnum requestedFromEnum;
+        String message;
+        if(isCrushWave){
+            requestedFromEnum= WaveRequestedFromEnum.notification;
+            message = "Hey Crush !";
+            if(null!=waveId&&!waveId.isEmpty()){
+                initiateWaveVariable.getContentData().setId(waveId);
+                requestedFromEnum = WaveRequestedFromEnum.waveSentTab;
+            }
+        }else {
+            requestedFromEnum= WaveRequestedFromEnum.vibeTribe;
+            message = "Waving Hi !";
+        }
+        initiateWaveVariable.createRequest(isCrushWave,receiverUserUid,message, WaveRequestTypeEnum.profilePhoto, requestedFromEnum,receiverDp);
+        requestBody.setVariables(initiateWaveVariable);
+        apiObj.setRequestBody(requestBody.toString());
+        return apiObj.apiCall();
+    }
+
+    public static Response acceptWave(boolean isCrush,String waveRequestId,String JWT){
+        BaseApi apiObj = new BaseApi();
+        apiObj.addHeader("Authorization", JWT);
+        RequestBody requestBody= new RequestBody();
+        requestBody.setQuery(GraphQLFileUtil.readGraphQLFromFileSystem(RequestBodySchemaFileEnums.CONFIRM_MATCH_V2));
+        ConfirmMatchV2 acceptWaveVariable = new ConfirmMatchV2();
+        acceptWaveVariable.createRequest("Request Accepted :)",waveRequestId,isCrush, ActionTriggersForAcceptMatch.chat,WaveRequestedFromEnum.notification);
+        requestBody.setVariables(acceptWaveVariable);
+        requestBody.setOperationName("ConfirmMatchV2");
+        apiObj.setRequestBody(requestBody.toString());
+        return apiObj.apiCall();
+    }
+
+    public static Response updateGeoLocation(){
+        BaseApi apiObj = new BaseApi();
+        apiObj.addHeader("Authorization", ThreadUtils.jwtToken.get());
+        UserGoelocation geo = new UserGoelocation();
+        RequestBody requestBody= new RequestBody();
+        requestBody.setQuery(GraphQLFileUtil.readGraphQLFromFileSystem(RequestBodySchemaFileEnums.USER_GEOLOCATION));
+        requestBody.setVariables(geo);
+        apiObj.setRequestBody(requestBody.toString());
+        return apiObj.apiCall();
     }
 }

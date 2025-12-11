@@ -12,6 +12,7 @@ public class RequestBody {
 
     private String query;
     private Object variables;
+    private String operationName;
 
 
 

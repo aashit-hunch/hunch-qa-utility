@@ -17,13 +17,16 @@ public final class GlobalData {
     public static final Gender GENDER_TYPE_PREFERENCE = Gender.fromString(System.getProperty("user.preference", "female"));
     public static final boolean USER_PROVIDED_DATA = Boolean.parseBoolean(System.getProperty("user.custom", "false"));
     public static final LatLong LAT_LONG = LatLong.valueOf(System.getProperty("user.location", "USA_NY"));
-    static {
+    public static final boolean ENABLE_INFO_LOGS = Boolean.parseBoolean(System.getProperty("enable.info.logs", "false"));
+
+    /*static {
         System.out.println("[DEBUG] user.custom property: '" + System.getProperty("user.custom") + "'");
         System.out.println("[DEBUG] USER_PROVIDED_DATA: " + USER_PROVIDED_DATA);
         System.out.println("[DEBUG] PHONE_NUMBER property: " + PHONE_NUMBER);
         System.out.println("[DEBUG] SETUP_USER_V2 property: " + SETUP_USER_V2);
         System.out.println("[DEBUG] JOURNEY: " + JOURNEY);
-    }
+        System.out.println("[DEBUG] ENABLE_INFO_LOGS: " + ENABLE_INFO_LOGS);
+    }*/
 
 
 

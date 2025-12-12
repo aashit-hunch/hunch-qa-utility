@@ -1,7 +1,9 @@
 package org.hunch.utils;
 
 import com.google.firebase.auth.FirebaseAuthException;
+import io.restassured.response.Response;
 import org.apache.log4j.Logger;
+import org.hunch.core.RequestParams;
 import org.hunch.dto.UserDetailsDTO;
 import org.hunch.enums.Ethnicity;
 import org.hunch.enums.Gender;
@@ -149,6 +151,30 @@ public class Common {
 
         FirebaseJWTManager.TokenPair tk =FirebaseJWTManager.getInstance().performTokenExchange(ud);
         return tk.getTokenB();
+    }
+
+    public static void validateApiStatusCode(RequestParams requestParams){
+        if(requestParams.getResponse().statusCode()==504){
+            String graphQLOperationName = extractGraphQLOperationName(requestParams.getRequestBody());
+            if(graphQLOperationName!=null){
+                LOGGER.error("API Response 504 Gateway Timeout for GraphQL Operation: "+graphQLOperationName);
+            }
+            throw new RuntimeException("API failed with 504 Gateway Timeout");
+        }
+    }
+    /**
+     * Extracts the GraphQL operation name (after 'query' or 'mutation' and before '(') from the request body.
+     * Case-insensitive for 'query' and 'mutation'. Returns null if not found.
+     */
+    public static String extractGraphQLOperationName(String requestBody) {
+        if (requestBody == null) return null;
+        // (?i) makes the regex case-insensitive
+        java.util.regex.Pattern pattern = java.util.regex.Pattern.compile("(?i)\\b(query|mutation)\\b\\s+(\\w+)\\s*\\(");
+        java.util.regex.Matcher matcher = pattern.matcher(requestBody);
+        if (matcher.find()) {
+            return matcher.group(2);
+        }
+        return null;
     }
 
 }

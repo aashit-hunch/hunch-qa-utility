@@ -3,6 +3,7 @@ package org.hunch.core;
 import io.restassured.RestAssured;
 import io.restassured.response.Response;
 import io.restassured.specification.RequestSpecification;
+import org.hunch.utils.Common;
 
 import java.util.Map;
 
@@ -43,6 +44,7 @@ public abstract class AbstractApiClient  {
         RequestParams newParam =  this.reqParam;
         RequestSpecification request = this.req;
         this.reqParam.setResponse(HttpClient.send(request, newParam));
+        Common.validateApiStatusCode(reqParam);
         return this.reqParam.getResponse();
     }
 }

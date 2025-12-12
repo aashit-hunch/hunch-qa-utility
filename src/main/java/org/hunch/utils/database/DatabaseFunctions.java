@@ -2,6 +2,7 @@ package org.hunch.utils.database;
 
 import org.apache.log4j.Logger;
 import org.hunch.constants.GlobalData;
+import org.hunch.dto.UserDetailsDTO;
 import org.hunch.models.db.InsertUserFeatureUsage;
 import org.hunch.models.db.InsertUserVerificationTrail;
 import org.hunch.models.db.InsertUsers;
@@ -11,6 +12,9 @@ import org.hunch.utils.Common;
 import org.hunch.utils.ThreadUtils;
 import org.json.JSONArray;
 import org.json.JSONObject;
+
+import java.util.Collection;
+import java.util.Collections;
 import java.util.Locale;
 import static org.hunch.operations.GenerateUserOperations.dbOps;
 
@@ -199,6 +203,35 @@ public class DatabaseFunctions {
         }
     }
 
-
+    public static void rollBackFailedUserCreation(Collection<UserDetailsDTO> userDto) {
+        if (userDto == null || userDto.isEmpty()) {
+            LOGGER.warn("No user DTOs provided for rollback.");
+            return;
+        }
+        // Extract user_uids and build a comma-separated, single-quoted string
+        StringBuilder uidsBuilder = new StringBuilder();
+        for (UserDetailsDTO dto : userDto) {
+            if (dto.getUser_id() != null && !dto.getUser_id().isEmpty()) {
+                if (uidsBuilder.length() > 0) uidsBuilder.append(",");
+                uidsBuilder.append("'").append(dto.getUser_id()).append("'");
+            }
+        }
+        if (uidsBuilder.length() == 0) {
+            LOGGER.warn("No valid user_uids found for rollback.");
+            return;
+        }
+        String uids = uidsBuilder.toString();
+        String queryUsers = "delete from users where user_uid in (" + uids + ")";
+        String queryUsersVerification = "delete from user_verification_trail where user_uid in (" + uids + ")";
+        String queryUsersFeature = "delete from user_feature_usage where user_uid in (" + uids + ")";
+        try {
+            int deletedUsers = dbOps.executeUpdate(queryUsers);
+            int deletedVerifications = dbOps.executeUpdate(queryUsersVerification);
+            int deletedFeatures = dbOps.executeUpdate(queryUsersFeature);
+            LOGGER.warn(String.format("Rollback complete. Deleted: users=%d, verifications=%d, features=%d", deletedUsers, deletedVerifications, deletedFeatures));
+        } catch (Exception e) {
+            LOGGER.error("Error during rollback of failed user creation", e);
+        }
+    }
 
 }

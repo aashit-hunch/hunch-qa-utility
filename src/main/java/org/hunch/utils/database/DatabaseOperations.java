@@ -49,7 +49,7 @@ public class DatabaseOperations {
             }
 
         }catch (SQLException w){
-            LOGGER.info("Exception Occurred while Inserting Data into DB : "+w.getMessage());
+            LOGGER.error("Exception Occurred while Inserting Data into DB : "+w.getMessage());
             return -1;
         }
 
@@ -89,7 +89,7 @@ public class DatabaseOperations {
             }
         }
         catch (Exception e){
-            LOGGER.info("Exception Occurred while fetching Data from DB : "+e.getMessage());
+            LOGGER.error("Exception Occurred while fetching Data from DB : "+e.getMessage());
         }
 
         return new JSONArray();
@@ -114,7 +114,7 @@ public class DatabaseOperations {
             return stmt.executeUpdate();
         }
         catch (Exception e){
-            LOGGER.info("Exception Occurred while Updating Data into DB : "+e.getMessage());
+            LOGGER.error("Exception Occurred while Updating Data into DB : "+e.getMessage());
             e.printStackTrace();
             return -1;
         }

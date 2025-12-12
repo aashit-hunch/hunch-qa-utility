@@ -7,10 +7,10 @@ import org.hunch.apis.APIService;
 import org.hunch.constants.Config;
 import org.hunch.constants.GlobalData;
 import org.hunch.dto.UserDetailsDTO;
-import org.hunch.enums.core.SetupV2Journey;
 import org.hunch.enums.core.UserOperations;
 import org.hunch.utils.Common;
 import org.hunch.utils.CryptoUtility;
+import org.hunch.utils.PrintResultOutput;
 import org.hunch.utils.database.DBConfig;
 import org.hunch.utils.database.DatabaseFunctions;
 import org.hunch.utils.database.DatabaseOperations;
@@ -27,6 +27,8 @@ public class GenerateUserOperations {
     public static PostgresDBConnections dbConnection = new PostgresDBConnections();
     public static DatabaseOperations dbOps;
     private static final Logger LOGGER = Logger.getLogger(GenerateUserOperations.class);
+    private static final Set<UserDetailsDTO> generatedSuccessUserUids = ConcurrentHashMap.newKeySet();
+    private static final Set<UserDetailsDTO> generatedFailedUserUids = ConcurrentHashMap.newKeySet();
 
     static {
         DBConfig config = new DBConfig(CryptoUtility.decrypt(Config.DB_HOST),
@@ -155,10 +157,16 @@ public class GenerateUserOperations {
                 }
             }
 
-
-            //LOGGER.info(String.format("[Thread-%d] Successfully completed user generation for User ID: %s",threadId, ThreadUtils.userDto.get().getUser_id()));
+            UserDetailsDTO userDto = ThreadUtils.userDto.get();
+            if (userDto != null && userDto.getUser_id() != null) {
+                generatedSuccessUserUids.add(userDto);
+            }
         } catch (Exception e) {
             LOGGER.error("Exception occurred during user generation:"+ e.getMessage());
+            UserDetailsDTO failedUserDto = ThreadUtils.userDto.get();
+            if (failedUserDto != null && failedUserDto.getUser_id() != null) {
+                generatedFailedUserUids.add(failedUserDto);
+            }
             throw new RuntimeException("User generation failed  " , e);
         } finally {
             // Clean up thread-local variable
@@ -170,7 +178,7 @@ public class GenerateUserOperations {
         try {
             if(!isCrush) DatabaseFunctions.makeUserPremium(sender.getString("user_uid"));
             else DatabaseFunctions.increaseCrushLimit(sender.getString("user_uid"),GlobalData.THREAD_COUNT);
-            DatabaseFunctions.deleteWaveCrush(sender.getString("user_uid"),receiver.getString("user_uid"));
+            //DatabaseFunctions.deleteWaveCrush(sender.getString("user_uid"),receiver.getString("user_uid"));
             if(APIService.sendBirdGetUser(receiver.getString("user_uid")).statusCode()==400){
                 APIService.sendBirdCreateUser(receiver);
             }
@@ -262,8 +270,14 @@ public class GenerateUserOperations {
             LOGGER.info(String.format("User generation completed. Success: %d, Failed: %d, Total: %d",
                     successCount.get(), failureCount.get(), numberOfUsers));
 
+            if(GlobalData.USER_OPERATION_TYPE== UserOperations.GENERATE_USER) {
+                // Print success and failed user IDs in boxes
+                PrintResultOutput.printBox("Generated Success User IDs", generatedSuccessUserUids);
+                PrintResultOutput.printBox("Generated Failed User IDs", generatedFailedUserUids);
+                DatabaseFunctions.rollBackFailedUserCreation(generatedFailedUserUids);
+            }
         } catch (Exception e) {
-            LOGGER.error("Exception occurred in main: " + e.getMessage(), e);
+            LOGGER.error("Exception occurred in while performing operation : " + e.getMessage(), e);
         } finally {
             // Shutdown executor service
             if (executorService != null) {
@@ -281,11 +295,17 @@ public class GenerateUserOperations {
                 }
             }
 
+            // Clear the user ID collections for next run
+            generatedSuccessUserUids.clear();
+            generatedFailedUserUids.clear();
 
         }
     }
 
     public static void main(String[] args) {
+
+        // Configure Log4j logging level based on GlobalData.ENABLE_INFO_LOGS flag
+        LoggerConfig.configure();
 
         try {
             // System Properties that can be set during execution:

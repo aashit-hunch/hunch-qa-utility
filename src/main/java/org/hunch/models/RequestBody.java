@@ -28,7 +28,7 @@ public class RequestBody {
         try {
             return Common.mapper.writeValueAsString(req);
         } catch (Exception e) {
-            LOGGER.info("Exception occurred :" + e.getMessage());
+            LOGGER.error("Exception occurred :" + e.getMessage());
         }
         return null;
     }
@@ -38,7 +38,7 @@ public class RequestBody {
         try {
             return Common.mapper.writeValueAsString(this);
         } catch (Exception e) {
-            LOGGER.info("Exception occurred :" + e.getMessage());
+            LOGGER.error("Exception occurred :" + e.getMessage());
         }
         return null;
     }

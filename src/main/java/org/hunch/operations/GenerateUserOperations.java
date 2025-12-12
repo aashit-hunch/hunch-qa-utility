@@ -29,6 +29,8 @@ public class GenerateUserOperations {
     private static final Logger LOGGER = Logger.getLogger(GenerateUserOperations.class);
     private static final Set<UserDetailsDTO> generatedSuccessUserUids = ConcurrentHashMap.newKeySet();
     private static final Set<UserDetailsDTO> generatedFailedUserUids = ConcurrentHashMap.newKeySet();
+    private static final Set<UserDetailsDTO> generatedSenderUids = ConcurrentHashMap.newKeySet();
+    private static final Set<UserDetailsDTO> generatedReceiverUids = ConcurrentHashMap.newKeySet();
 
     static {
         DBConfig config = new DBConfig(CryptoUtility.decrypt(Config.DB_HOST),
@@ -176,6 +178,8 @@ public class GenerateUserOperations {
 
     private static void generateWaveCrush(boolean isCrush,JSONObject sender, JSONObject receiver,boolean isAccepted) {
         try {
+            generatedSenderUids.add(Common.setUserDtoViaJsonObject(sender));
+            generatedReceiverUids.add(Common.setUserDtoViaJsonObject(receiver));
             if(!isCrush) DatabaseFunctions.makeUserPremium(sender.getString("user_uid"));
             else DatabaseFunctions.increaseCrushLimit(sender.getString("user_uid"),GlobalData.THREAD_COUNT);
             //DatabaseFunctions.deleteWaveCrush(sender.getString("user_uid"),receiver.getString("user_uid"));
@@ -270,11 +274,15 @@ public class GenerateUserOperations {
             LOGGER.info(String.format("User generation completed. Success: %d, Failed: %d, Total: %d",
                     successCount.get(), failureCount.get(), numberOfUsers));
 
-            if(GlobalData.USER_OPERATION_TYPE== UserOperations.GENERATE_USER) {
+            if(!generatedSuccessUserUids.isEmpty() || !generatedFailedUserUids.isEmpty()){
                 // Print success and failed user IDs in boxes
-                PrintResultOutput.printBox("Generated Success User IDs", generatedSuccessUserUids);
-                PrintResultOutput.printBox("Generated Failed User IDs", generatedFailedUserUids);
+                PrintResultOutput.printBox("Generated Success User", generatedSuccessUserUids);
+                PrintResultOutput.printBox("Generated Failed User", generatedFailedUserUids);
                 DatabaseFunctions.rollBackFailedUserCreation(generatedFailedUserUids);
+            }
+            if(!generatedSenderUids.isEmpty() && !generatedReceiverUids.isEmpty()){
+                PrintResultOutput.printBox("Wave/Crush Sender User", generatedSenderUids);
+                PrintResultOutput.printBox("Wave/Crush Receiver User", generatedReceiverUids);
             }
         } catch (Exception e) {
             LOGGER.error("Exception occurred in while performing operation : " + e.getMessage(), e);
@@ -298,6 +306,8 @@ public class GenerateUserOperations {
             // Clear the user ID collections for next run
             generatedSuccessUserUids.clear();
             generatedFailedUserUids.clear();
+            generatedSenderUids.clear();
+            generatedReceiverUids.clear();
 
         }
     }
@@ -350,7 +360,7 @@ public class GenerateUserOperations {
                         generateUserWorkflow();
                         userData =DatabaseFunctions.getUserDataByPhone(GlobalData.PHONE_NUMBER);
                     }
-                    Common.setUserDtoViaJsonObject(userData.getJSONObject(0));
+                    ThreadUtils.userDto.set(Common.setUserDtoViaJsonObject(userData.getJSONObject(0)));
                     jsonArray =DatabaseFunctions.getGenderPreferredData();
                     jsonObject = userData.getJSONObject(0);
                     userGenerationManager(threadCount,jsonArray,jsonObject);

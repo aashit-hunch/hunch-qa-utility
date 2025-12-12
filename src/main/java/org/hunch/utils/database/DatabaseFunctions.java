@@ -143,7 +143,9 @@ public class DatabaseFunctions {
                 "    u.email,\n" +
                 "    u.first_name,\n" +
                 "    u.username,\n" +
-                "    u.dp\n" +
+                "    u.dp,\n" +
+                "    u.multiple_dps,\n" +
+                "    u.desired_relationship_type\n" +
                 "FROM \n" +
                 "    users u\n" +
                 "WHERE \n" +
@@ -155,6 +157,7 @@ public class DatabaseFunctions {
                 "    AND u.source = 'custom_phone_number'\n" +
                 "    AND u.is_deleted = false\n" +
                 "    AND u.user_uid <> '"+user_uid+"'\n" +
+                "    AND ethnicity in('Asian','Black/African','Black / African American','Hispanic/Latino','Middle Eastern','Native American / Indigenous','Other','Pacific Islander','South Asian','White/Caucasian')\n"+
                 "    AND NOT EXISTS (\n" +
                 "        SELECT 1\n" +
                 "        FROM goss_requests g\n" +

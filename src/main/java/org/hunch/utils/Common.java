@@ -102,7 +102,7 @@ public class Common {
         }
     }
 
-    public static void setUserDtoViaJsonObject(JSONObject jsonObject){
+    public static UserDetailsDTO setUserDtoViaJsonObject(JSONObject jsonObject){
         try{
             UserDetailsDTO dto = new UserDetailsDTO();
             dto.setUser_id(jsonObject.getString("user_uid"));
@@ -131,7 +131,7 @@ public class Common {
                             .map(Object::toString)
                             .map(Gender::fromString)
                             .toList());
-            ThreadUtils.userDto.set(dto);
+            return dto;
         }
         catch (Exception e){
             throw new RuntimeException("Exception occurred while setting UserDto from JSONArray : "+e.getMessage());

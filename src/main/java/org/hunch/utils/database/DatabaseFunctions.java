@@ -179,7 +179,7 @@ public class DatabaseFunctions {
         );
     }
 
-    public static int makeUserPremium(String userUid){
+    public static synchronized int makeUserPremium(String userUid){
 
         JSONArray entitlements = dbOps.executeQuery(
             "SELECT * FROM user_entitlements ue WHERE ue.user_uid = ? AND ue.expire_date > now() LIMIT 10",

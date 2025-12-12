@@ -43,7 +43,7 @@ public class GenerateUserOperations {
         dbOps = new DatabaseOperations(dbConnection);
     }
 
-    public String generateRandomUUID() {
+    public synchronized String generateRandomUUID() {
         LOGGER.info("Generating Random UUID");
         boolean isValid = false;
         String uuid = "";
@@ -59,7 +59,7 @@ public class GenerateUserOperations {
         return uuid;
     }
 
-    public String generateRandomNumber() {
+    public synchronized String generateRandomNumber() {
         LOGGER.info("Generating Random Phone Number");
         boolean isValid = false;
         Long number = Long.MIN_VALUE;
@@ -75,7 +75,7 @@ public class GenerateUserOperations {
         return "+91" + number;
     }
 
-    public String generateRandomAdId() {
+    public synchronized String generateRandomAdId() {
         LOGGER.info("Generating Random Adjust Ad ID");
         boolean isValid = false;
         String adjust_adid = "";
@@ -91,7 +91,7 @@ public class GenerateUserOperations {
         return adjust_adid;
     }
 
-    public String generateRandomReferralCode() {
+    public synchronized String generateRandomReferralCode() {
         LOGGER.info("Generating Random Referral Code");
         boolean isValid = false;
         String referral_code = "";
@@ -107,7 +107,7 @@ public class GenerateUserOperations {
         return referral_code;
     }
 
-    public String generateRandomUserName() {
+    public synchronized String generateRandomUserName() {
         LOGGER.info("Generating Random Username");
         boolean isValid = false;
         String username = "";

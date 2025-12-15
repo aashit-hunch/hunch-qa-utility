@@ -169,7 +169,7 @@ Generates 1 female user preferring males, with MBTI onboarding journey, located 
 
 | Property | Values | Default | Description |
 |----------|--------|---------|-------------|
-| `enable.info.logs` | `true`, `false` | `true` | Enable/disable INFO level logs |
+| `enable.info.logs` | `true`, `false` | `false` | Enable/disable INFO level logs |
 
 ## Logging Control
 

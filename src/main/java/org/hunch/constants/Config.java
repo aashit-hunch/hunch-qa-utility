@@ -10,7 +10,7 @@ public class Config {
     public static final String DB_PASS = "J+JjuDgPlOnfYRIOdaGOButnmwZjvQosWO9VCQAJLPz0t6Oyx3rjTKiQeChit4JBe3AnWrCQygsCgpslkRuhwg==";
     public static final String DB_NAME = "QMDGTFnNHInSusfZcU+Pl3jYZMm1nhCqy2sh8prTvaVFcHw1CcQqfS1/fBfIxakRlVhi5DaQWUaOrZAAuoawtQ==";
     public static final boolean LOG_REQUEST_RESPONSE = true;
-    public static final String USER_AGENT="HunchApp v2.56.4";
+    public static final String USER_AGENT="Android; 15; SM-M146B; arm64-v8a; HunchApp v2.56.4";
     // Firebase Configurations
     public static final String FIREBASE_TYPE = "service_account";
     public static final String FIREBASE_AUTH_URI = "https://accounts.google.com/o/oauth2/auth";

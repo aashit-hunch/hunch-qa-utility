@@ -154,12 +154,12 @@ public class Common {
     }
 
     public static void validateApiStatusCode(RequestParams requestParams){
-        if(requestParams.getResponse().statusCode()==504){
+        if(requestParams.getResponse().statusCode()==504 || requestParams.getResponse().statusCode()==502 || requestParams.getResponse().statusCode()==503){
             String graphQLOperationName = extractGraphQLOperationName(requestParams.getRequestBody());
             if(graphQLOperationName!=null){
-                LOGGER.error("API Response 504 Gateway Timeout for GraphQL Operation: "+graphQLOperationName);
+                LOGGER.error("API Response "+requestParams.getResponse().statusCode()+" "+requestParams.getResponse().statusLine()+" for GraphQL Operation: "+graphQLOperationName);
             }
-            throw new RuntimeException("API failed with 504 Gateway Timeout");
+            throw new RuntimeException("API failed with "+requestParams.getResponse().statusCode()+" "+requestParams.getResponse().statusLine());
         }
     }
     /**

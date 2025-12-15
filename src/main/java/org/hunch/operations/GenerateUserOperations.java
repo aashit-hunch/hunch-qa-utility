@@ -33,6 +33,8 @@ public class GenerateUserOperations {
     private static final Set<UserDetailsDTO> generatedReceiverUids = ConcurrentHashMap.newKeySet();
 
     static {
+        // Configure Log4j logging level based on GlobalData.ENABLE_INFO_LOGS flag
+        LoggerConfig.configure();
         DBConfig config = new DBConfig(CryptoUtility.decrypt(Config.DB_HOST),
                 5432,
                 CryptoUtility.decrypt(Config.DB_USER),
@@ -204,6 +206,7 @@ public class GenerateUserOperations {
         }
 
     }
+
     private static void userGenerationManager(int numberOfUsers, JSONArray jsonArray, JSONObject jsonObject) {
         ExecutorService executorService = null;
 
@@ -314,8 +317,6 @@ public class GenerateUserOperations {
 
     public static void main(String[] args) {
 
-        // Configure Log4j logging level based on GlobalData.ENABLE_INFO_LOGS flag
-        LoggerConfig.configure();
 
         try {
             // System Properties that can be set during execution:
@@ -334,7 +335,7 @@ public class GenerateUserOperations {
             //user.custom : Boolean = true/false (If true, user provided data will be used for user generation)
 
             // Get User count from system property, default to 1 if not specified
-
+            IO.println("\n\nGet a coffee ☕️ , This may take a while... Generating data in progress...");
             int threadCount = GlobalData.THREAD_COUNT;
             // Validate User count
             if (threadCount < 1) {

@@ -9,7 +9,9 @@ public enum MimeType {
     TEXT_PLAIN("text/plain"),
     TEXT_HTML("text/html"),
     APPLICATION_PDF("application/pdf"),
-    APPLICATION_XML("application/xml");
+    APPLICATION_XML("application/xml"),
+    IMAGE_PNG("image/png"),
+    IMAGE_JPEG("image/jpeg");
 
     private String value;
 

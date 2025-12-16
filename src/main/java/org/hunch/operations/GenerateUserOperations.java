@@ -115,7 +115,7 @@ public class GenerateUserOperations {
         String username = "";
         while (!isValid) {
             username = Faker.instance().name().firstName() + Faker.instance().name().lastName();
-            username.replaceAll("'","");
+            username = username.replace("'", ""); // Remove all single quotes from username
             String query = "select user_uid  from users where username = '" + username + "';";
             int count = dbOps.executeQuery(query).length();
             if (count == 0) {
@@ -147,8 +147,10 @@ public class GenerateUserOperations {
                 case images -> {
                     APIService.setupV2WithRandomData();
                     APIService.setRandomMbti();
-                    APIService.uploadDps();
-                    DatabaseFunctions.updateUserImages();
+                    Response respUploadImage =APIService.uploadDps();
+                    if(respUploadImage.statusCode()!=200){
+                        DatabaseFunctions.updateUserImages();
+                    }
                     DatabaseFunctions.livenessDataSet();
                     APIService.sendBirdUpdateDp();
                     APIService.setupV2FinalCall();
@@ -333,6 +335,7 @@ public class GenerateUserOperations {
             //user.gender : Gender Enum
             //user.preference : Gender Enum
             //user.custom : Boolean = true/false (If true, user provided data will be used for user generation)
+            //enable.info.logs : Boolean = true/false (If true, info level logs will be enabled)
 
             // Get User count from system property, default to 1 if not specified
             IO.println("\n\nGet a coffee ☕️ , This may take a while... Generating data in progress...");
@@ -377,13 +380,14 @@ public class GenerateUserOperations {
 
             // Close database connection pool (this also deregisters JDBC drivers)
             dbConnection.closePool();
-
+            Common.clearUserImagesDirectory();
             LOGGER.info("All resources released. Forcing application exit...");
 
             // Force JVM exit to terminate lingering non-daemon threads
             // This is necessary because PostgreSQL-JDBC-Cleaner and httpclient threads
             // are non-daemon and don't respond to interruption
             System.exit(0);
+
         }
     }
 

@@ -11,7 +11,8 @@ public enum RequestBodySchemaFileEnums {
     GET_UNIFIED_FEED("GetUnifiedFeed.graphql"),
     INITIATE_WAVE("InitiateWave.graphql"),
     CONFIRM_MATCH_V2("ConfirmMatchV2.graphql"),
-    USER_GEOLOCATION("UserGoelocation.graphql");
+    USER_GEOLOCATION("UserGoelocation.graphql"),
+    GET_PRE_SIGNED_URL("GetPreSignedUrl.graphql"),;
 
     String value;
     RequestBodySchemaFileEnums(String value){

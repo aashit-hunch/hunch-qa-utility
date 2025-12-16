@@ -35,6 +35,13 @@ public abstract class AbstractApiClient  {
     public void setRequestBody(String body) {
         this.reqParam.setRequestBody(body);
     }
+    public void setRequestBody(Object body) {
+        this.reqParam.setRequestBody(body);
+    }
+
+    public void isURLEncoded(boolean isEncoded){
+        this.req.urlEncodingEnabled(isEncoded);
+    }
 
     public void addReqPath(String path){
         this.reqParam.setPath(path);

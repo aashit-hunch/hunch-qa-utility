@@ -7,7 +7,7 @@ import java.util.Map;
 
 public class RequestParams {
     private String uri;
-    private String requestBody;
+    private Object requestBody;
     private Response response;
     private HttpMethodType methodType;
     private MimeType mimeType;
@@ -56,11 +56,11 @@ public class RequestParams {
         this.uri = uri;
     }
 
-    public String getRequestBody() {
+    public Object getRequestBody() {
         return this.requestBody;
     }
 
-    public void setRequestBody(String requestBody) {
+    public void setRequestBody(Object requestBody) {
         this.requestBody = requestBody;
     }
 

@@ -41,7 +41,7 @@ public class DatabaseFunctions {
             ThreadUtils.userDto.get().setUser_id(userUid);
             ThreadUtils.userDto.get().setPhone_number(phoneNumber);
 
-            ThreadUtils.jwtToken.set(fetchJwtFromPhoneNumber(phoneNumber));
+            ThreadUtils.jwtToken.set(fetchJwtFromUid(userUid));
         }
         catch (Exception e){
             throw new RuntimeException("Exception occurred while generating random user : "+e.getMessage());
@@ -85,6 +85,21 @@ public class DatabaseFunctions {
         }
         catch (Exception e){
             throw new RuntimeException("Exception occurred while fetching JWT from Phone Number : "+e.getMessage());
+        }
+    }
+
+    public static String fetchJwtFromUid(String uid){
+        try{
+            String query = "select *  from users where user_uid = '" + uid + "';";
+            JSONArray arr =dbOps.executeQuery(query);
+            if (arr.isEmpty()){
+                LOGGER.info("No User Found with User Uid : "+uid);
+                return null;
+            }
+            return Common.generateFirebaseToken(arr.getJSONObject(0));
+        }
+        catch (Exception e){
+            throw new RuntimeException("Exception occurred while fetching JWT from User Uid : "+e.getMessage());
         }
     }
 

@@ -1,0 +1,3 @@
+query GetPreSignedUrl($type: UPLOAD_TYPE!, $fileName: String!, $contentType: String!, $draftId: String!) {
+  getPreSignedUrl(type: $type, fileName: $fileName, contentType: $contentType, draftId: $draftId)
+}

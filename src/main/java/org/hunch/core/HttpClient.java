@@ -70,13 +70,27 @@ public class HttpClient {
             request.multiPart((String)multiPart.getKey(), multiPart.getValue());
         }
 
-        String bodyString = requestParams.getRequestBody();
-        String nullString = "null";
-        if (null != bodyString && bodyString.length() != 0) {
-            bodyString = bodyString.replaceAll("\"SET_NULL\"", nullString);
-            bodyString = bodyString.replaceAll("SET_NULL", nullString);
-            requestParams.setRequestBody(bodyString);
-            request.body(bodyString);
+        if(requestParams.getRequestBody() instanceof  String){
+            String bodyString = requestParams.getRequestBody().toString();
+            String nullString = "null";
+            if (null != bodyString && bodyString.length() != 0) {
+                bodyString = bodyString.replaceAll("\"SET_NULL\"", nullString);
+                bodyString = bodyString.replaceAll("SET_NULL", nullString);
+                requestParams.setRequestBody(bodyString);
+                request.body(bodyString);
+            }
+        }
+        else if(requestParams.getRequestBody() instanceof byte[]){
+            // Handle binary data (images, files) directly without serialization
+            byte[] binaryData = (byte[]) requestParams.getRequestBody();
+            if (null != binaryData && binaryData.length > 0) {
+                request.body(binaryData);
+            }
+        }
+        else {
+            if (null != requestParams.getRequestBody()) {
+                request.body(requestParams.getRequestBody());
+            }
         }
 
         if(null==requestParams.getPath()){

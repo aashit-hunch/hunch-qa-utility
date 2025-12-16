@@ -1,7 +1,10 @@
 package org.hunch.apis;
 
 import com.github.javafaker.Faker;
+import com.github.javafaker.File;
 import io.restassured.response.Response;
+import org.hunch.constants.Config;
+import org.hunch.core.MimeType;
 import org.hunch.enums.ActionTriggersForAcceptMatch;
 import org.hunch.enums.WaveRequestTypeEnum;
 import org.hunch.enums.WaveRequestedFromEnum;
@@ -14,9 +17,9 @@ import org.hunch.utils.ThreadUtils;
 import org.json.JSONArray;
 import org.json.JSONObject;
 
-import java.util.Collections;
-import java.util.List;
-import java.util.Map;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.util.*;
 
 public class APIService {
 
@@ -128,28 +131,44 @@ public class APIService {
         //ThreadUtils.jwtToken.set(jwtToken);
     }
 
-    public static void uploadDps(){
+    public static Response uploadDps(){
         JSONArray obj = Common.getUserData();
         SetMultipleDps dps = new SetMultipleDps();
         for (int i=0;i<obj.length();i++){
             if(obj.getJSONObject(i).getString("gender").equalsIgnoreCase(ThreadUtils.userDto.get().getGender().getString())){
-                ThreadUtils.userDto.get().setMainDpUrl(obj.getJSONObject(i).getString("dp"));
-                ThreadUtils.userDto.get().setOtherDpUrls(obj.getJSONObject(i).getJSONArray("multiple_dps").toList().stream()
+                String dp = obj.getJSONObject(i).getString("dp");
+                List<String> arry = new ArrayList<>(obj.getJSONObject(i).getJSONArray("multiple_dps").toList().stream()
                         .map(Object::toString)
                         .map(url -> url.replace("\\", ""))
                         .toList());
+                if(dp.contains("https://assets.hunch.in") || dp.contains("https://resources.hunch.in/")){
+                    //Downloading and Uploading S3 Image
+                    String mainDp = String.valueOf(UUID.randomUUID()+"_jpeg");
+                    Common.downloadImage(dp,mainDp);
+                    uploadProfileImage(mainDp);
+                    dp= Config.S3_URL+mainDp;
+                    for(int j=0;j<arry.size();j++){
+                        String otherDp = String.valueOf(UUID.randomUUID()+"_jpeg");
+                        Common.downloadImage(arry.get(j),otherDp);
+                        uploadProfileImage(otherDp);
+                        arry.set(j,Config.S3_URL+otherDp);
+                    }
+                }
+                ThreadUtils.userDto.get().setMainDpUrl(dp);
+                ThreadUtils.userDto.get().setOtherDpUrls(arry);
                 break;
             }
         }
         dps.setDps(ThreadUtils.userDto.get().getMainDpUrl(),ThreadUtils.userDto.get().getOtherDpUrls());
 
         BaseApi apiObj = new BaseApi();
+        apiObj.isURLEncoded(false);
         apiObj.addHeader("Authorization", ThreadUtils.jwtToken.get());
         RequestBody requestBody= new RequestBody();
         requestBody.setQuery(GraphQLFileUtil.readGraphQLFromFileSystem(RequestBodySchemaFileEnums.SET_MULTIPLE_DPS));
         requestBody.setVariables(dps);
         apiObj.setRequestBody(requestBody.toString());
-        apiObj.apiCall();
+        return apiObj.apiCall();
     }
 
     public static void sendBirdUpdateDp(String... dpUrl){
@@ -249,5 +268,36 @@ public class APIService {
         requestBody.setVariables(geo);
         apiObj.setRequestBody(requestBody.toString());
         return apiObj.apiCall();
+    }
+
+    public static Response getPreSignedUrl(String fileName){
+        BaseApi apiObj = new BaseApi();
+        apiObj.addHeader("Authorization", ThreadUtils.jwtToken.get());
+        RequestBody requestBody= new RequestBody();
+        requestBody.setQuery(GraphQLFileUtil.readGraphQLFromFileSystem(RequestBodySchemaFileEnums.GET_PRE_SIGNED_URL));
+        GetPreSignedUrl preSignedUrl = new GetPreSignedUrl("profile",fileName, MimeType.IMAGE_JPEG,"");
+        requestBody.setVariables(preSignedUrl);
+        apiObj.setRequestBody(requestBody.toString());
+        return apiObj.apiCall();
+    }
+
+    public static void uploadImageToS3(MimeType mimeType,String presignedUrl,String filePath){
+        UploadToS3 s3 = new UploadToS3(presignedUrl,mimeType);
+        try{
+            byte[] imageBytes = Files.readAllBytes(
+                    Path.of(System.getProperty("user.dir")+"/src/main/resources/userImages/"+filePath+".jpeg")
+            );
+            s3.setRequestBody(imageBytes);
+            s3.apiCall();
+        }
+        catch (Exception e){
+            e.printStackTrace();
+        }
+
+    }
+
+    public static void uploadProfileImage(String fileName){
+        String URL = getPreSignedUrl(fileName).jsonPath().getString("data.getPreSignedUrl");
+        uploadImageToS3(MimeType.IMAGE_JPEG,URL,fileName);
     }
 }

@@ -223,7 +223,7 @@ public class DatabaseFunctions {
 
     public static void rollBackFailedUserCreation(Collection<UserDetailsDTO> userDto) {
         if (userDto == null || userDto.isEmpty()) {
-            LOGGER.warn("No user DTOs provided for rollback.");
+            LOGGER.info("No user DTOs provided for rollback.");
             return;
         }
         // Extract user_uids and build a comma-separated, single-quoted string
